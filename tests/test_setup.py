@@ -59,8 +59,10 @@ class ProbeOnScreen(unittest.TestCase):
             return json.loads(dec.strip()[len("dec("):-len(");")])
 
     def test_bash_hook(self):
-        if not shutil.which("bash"):
-            self.skipTest("нет bash")
+        try:
+            subprocess.run(["bash", "-c", "true"], check=True, capture_output=True, timeout=20)
+        except (OSError, subprocess.SubprocessError):
+            self.skipTest("bash не запускается (например, в песочнице Codex)")
         self.assertEqual(self.run_hook(["bash"], "office.sh")["alpik"].get("проба"), "да")
 
     def test_powershell_hook(self):
