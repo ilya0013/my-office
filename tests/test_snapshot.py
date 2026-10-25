@@ -60,8 +60,8 @@ class Snapshot(unittest.TestCase):
         self.assertFalse((self.office / "роли" / "first.md").exists())
         self.assertEqual(text(self.office / "каталог.md"), catalog)
         # поздние правки каталога не пропали: лежат в снимке «до-отката»
-        saved = sorted((self.office / "настройка" / "было").glob("*до-отката*/каталог.md"))
-        self.assertEqual(text(saved[0]), "изменён")
+        saved = (self.office / "настройка" / "было").glob("*до-отката/каталог.md")
+        self.assertIn("изменён", [text(s) for s in saved])  # порядок в одну секунду не важен
 
 
 if __name__ == "__main__":
