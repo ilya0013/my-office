@@ -1,0 +1,13 @@
+__pycache__/
+.env
+*.key
+*.pem
+credentials*
+secrets*
+
+лиды/*.md
+!лиды/_шаблон.md
+письма/*.md
+ответы/*.md
+экран/events.js
+docs/lab-runs/
