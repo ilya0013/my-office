@@ -7,7 +7,7 @@
   body.mo-wide #mo-layout { display:grid; grid-template-columns:minmax(0, var(--mo-office-w, 60%)) minmax(360px, 1fr); gap:12px; align-items:start; }
   #mo { display:flex; flex-direction:column; gap:8px; margin-top:8px; min-width:0; }
   body.mo-wide #mo { margin-top:0; height:calc(100vh - 60px); }
-  body.mo-wide footer { display:none; }
+  footer { display:none; }   /* подсказка про лаунж и подпись не нужны: всё видно в офисе */
   body.mo-wide .wrap { padding-bottom:8px; }
   #mo-tabs { display:flex; gap:4px; flex-wrap:wrap; }
   #mo-tabs button { background:none; border:1px solid var(--line); color:var(--muted); border-radius:6px; padding:5px 12px; font:inherit; font-size:13px; cursor:pointer; }
