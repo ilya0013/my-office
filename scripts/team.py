@@ -17,11 +17,11 @@ BACKUPS = ROOT / "настройка" / "было"
 
 
 def save(suffix=""):
-    stamp = time.strftime("%Y-%m-%d-%H%M%S") + suffix
-    dest, n = BACKUPS / stamp, 1
+    stamp = time.strftime("%Y-%m-%d-%H%M%S")
+    dest, n = BACKUPS / (stamp + suffix), 1
     while dest.exists():
         n += 1
-        dest = BACKUPS / f"{stamp}-{n}"
+        dest = BACKUPS / f"{stamp}-{n}{suffix}"  # суффикс в конце: по нему restore узнаёт свои снимки
     for rel in SAVED:
         src, out = ROOT / rel, dest / rel
         out.parent.mkdir(parents=True, exist_ok=True)
