@@ -515,6 +515,8 @@
       if (!lead) S.leads[slug] = { title, status, by: '', at };
       else { lead.title = title; if (lead.status !== status) { lead.status = status; lead.at = at; flow(at, 'Файлы', '📋', status, slug); } }
     }
+    // снимок файлов полный: компании нет в лиды/ (проба перенесена, файл удалён) — нет и на экране
+    for (const slug of Object.keys(S.leads)) if (!(slug in leads)) delete S.leads[slug];
   }
   function flow(at, from, to, text, slug) { S.flow.push({ at, from, to, text, slug }); if (S.flow.length > 200) S.flow.shift(); }
   function step(a, text, at) {
@@ -781,7 +783,7 @@
   function csv() {
     const q = (v) => '"' + String(v ?? '').replace(/"/g, '""').trim() + '"';
     const head = ['Компания', 'Город', 'Сайт', 'Стадия', 'Почему подходит', 'Контакт', 'Тема', 'Письмо', 'Перевод'];
-    const lines = rows().map(([slug, l, d]) => [l.title, d['город'], d['сайт'], (STAGE[l.status] || [l.status])[0], d['почему'], mailOf(d) || d['контакт'], d['тема'], plain(d['письмо']), plain(d['перевод'])].map(q).join(';'));
+    const lines = rows().map(([slug, l, d]) => [l.title, d['город'], d['сайт'], (probe(slug) ? 'проба · ' : '') + (STAGE[l.status] || [l.status])[0], d['почему'], mailOf(d) || d['контакт'], d['тема'], plain(d['письмо']), plain(d['перевод'])].map(q).join(';'));
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob(['\ufeff' + [head.map(q).join(';'), ...lines].join('\r\n')], { type: 'text/csv;charset=utf-8' }));
     a.download = 'компании.csv'; document.body.appendChild(a); a.click(); a.remove();

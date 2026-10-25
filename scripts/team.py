@@ -1,7 +1,7 @@
 """Снимок команды и откат: python -I -X utf8 scripts/team.py save | restore [папка снимка].
 save — копия ролей, правил, каталога, шаблона карточки и списка агентов в настройка/было/<время>/.
-restore — всё обратно из последнего (или названного) снимка; роли, которых в снимке нет, удаляются;
-затем сборка агентов.
+restore — сначала снимок того, что есть сейчас (откат можно откатить), затем всё обратно из
+последнего прежнего (или названного) снимка; роли, которых в снимке нет, удаляются; сборка агентов.
 """
 import shutil
 import subprocess
@@ -15,7 +15,11 @@ BACKUPS = ROOT / "настройка" / "было"
 
 
 def save():
-    dest = BACKUPS / time.strftime("%Y-%m-%d-%H%M%S")
+    stamp = time.strftime("%Y-%m-%d-%H%M%S")
+    dest, n = BACKUPS / stamp, 1
+    while dest.exists():
+        n += 1
+        dest = BACKUPS / f"{stamp}-{n}"
     for rel in SAVED:
         src, out = ROOT / rel, dest / rel
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -28,6 +32,7 @@ def restore(name=None):
     src = BACKUPS / name if name else (snaps[-1] if snaps else None)
     if not src or not (src / "роли").is_dir():
         sys.exit("снимка команды нет")
+    save()
     for rel in SAVED:
         if (ROOT / rel).is_dir():
             shutil.rmtree(ROOT / rel)

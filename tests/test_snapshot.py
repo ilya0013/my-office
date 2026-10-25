@@ -35,6 +35,10 @@ class Snapshot(unittest.TestCase):
             self.assertFalse((office / ".claude" / "agents" / "hired.md").exists())
             self.assertFalse((office / ".codex" / "agents" / "hired.toml").exists())
             self.assertEqual((office / "каталог.md").read_text(encoding="utf-8"), text(ROOT / "каталог.md"))
+            # откат сам сохранил то, что было до него: поздние правки каталога не пропали
+            snaps = sorted((office / "настройка" / "было").glob("*/каталог.md"))
+            self.assertEqual(len(snaps), 2)
+            self.assertEqual(text(snaps[-1]), "изменён")
 
 
 def text(p):
