@@ -12,14 +12,14 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-REPO_ONLY = ("docs/сценарий-2ч.md", "docs/лаба.md", "scripts/release.py", "scripts/screen/")  # для ведущего и сборки
+REPO_ONLY = ("docs/сценарий-2ч.md", "docs/лаба.md", "docs/v0.3-мастер-настройки.md", "scripts/release.py", "scripts/screen/")  # для ведущего и сборки
 NO_SCAN = ("scripts/screen/cubicle-0.38.1.html", "scripts/release.py")  # оригинал Cubicle; сам список проверок
 PERSONAL = [Path.home().name, "C:\\Users", "C:/Users"]  # следы машины, где собирают выпуск
 MUST = ["README.md", "INSTALL.md", "LICENSE", "CLAUDE.md", "AGENTS.md", "ПРАВИЛА.md", "каталог.md",
         ".claude/settings.json", ".codex/config.toml", ".codex/hooks.json",
         "экран/офис.html", "hooks/office.sh", "hooks/office.ps1", "экран/demo-events.js",
         "экран/LICENSE-cubicle.txt", "лиды/_шаблон.md", "входящие.md",
-        "экран/serve.py", "экран/serve.ps1", ".claude/launch.json",   # экран во встроенном браузере Claude Code
+        "экран/serve.py", "экран/serve.ps1", ".claude/launch.json", "scripts/team.py", "docs/настройка.md",   # экран во встроенном браузере Claude Code
         # на них ссылаются роли, README и scripts/trial.py
         "docs/перестроить-офис.md", "docs/под-своё-дело.md", "docs/почему-команда.md", "docs/модели.md",
         "docs/испытание-codex.md", "docs/отправка-писем.md", "docs/как-устроен-офис.md", "scripts/trial.py", "tests/test_build_agents.py"]

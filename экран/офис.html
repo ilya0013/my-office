@@ -515,6 +515,8 @@
       if (!lead) S.leads[slug] = { title, status, by: '', at };
       else { lead.title = title; if (lead.status !== status) { lead.status = status; lead.at = at; flow(at, 'Файлы', '📋', status, slug); } }
     }
+    // снимок файлов полный: компании нет в лиды/ (проба перенесена, файл удалён) — нет и на экране
+    for (const slug of Object.keys(S.leads)) if (!(slug in leads)) delete S.leads[slug];
   }
   function flow(at, from, to, text, slug) { S.flow.push({ at, from, to, text, slug }); if (S.flow.length > 200) S.flow.shift(); }
   function step(a, text, at) {
@@ -714,6 +716,9 @@
   const ORDER = Object.keys(STAGE);
   // «неизвестно» от Разведчика — пустая клетка: так таблица читается легче
   const info = (slug) => Object.fromEntries(Object.entries((D && D[slug]) || {}).map(([k, v]) => [k, /^неизвестн/i.test(String(v).trim()) ? '' : v]));
+  // проба мастера настройки: видна в «Базе», но не ждёт вашего «одобряю»
+  const probe = (slug) => /^да/i.test(String((D && D[slug] && D[slug]['проба']) || ''));
+  const waiting = () => Object.entries(S.leads).filter(([slug, l]) => l.status === 'проверено' && !probe(slug)).length;
   const mailOf = (d) => (String(d['кому'] || d['контакт'] || '').match(/[\w.+-]+@[\w-]+(\.[\w-]+)+/) || [''])[0];
   const site = (u) => (/^https?:\/\//.test(u || '') ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(String(u).replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, ''))}</a>` : esc(u || ''));
   function rows() {
@@ -723,14 +728,15 @@
   }
   function renderBase() {
     const list = rows();
-    const n = list.length, wait = list.filter(([, l]) => l.status === 'проверено').length;
+    const n = list.length, wait = waiting();
     set('mo-base-n', n ? `<b>${n}</b>` : '');
     set('mo-base-sum', n ? `Компаний: ${n}` + (wait ? ` · ждут вашего «одобряю»: ${wait} — ответьте Боссу в чате` : '') : '');
     if (!n) return set('mo-base-table', '<div class="mute">Компаний пока нет. Напишите Боссу в чате: «найди 5 компаний».</div>');
     const body = list.map(([slug, l, d]) => {
-      const [stage, cls] = STAGE[l.status] || [l.status, ''];
+      const [stage, own] = STAGE[l.status] || [l.status, ''];
+      const cls = probe(slug) && own === 'you' ? '' : own;
       const hasLetter = !PLAY && (d['письмо'] || S.written.has(`письма/${slug}.md`));
-      let h = `<tr class="${cls === 'you' ? 'you' : ''}"><td><b>${leadA(slug, l.title)}</b></td><td>${esc(d['город'] || '')}</td><td>${site(d['сайт'])}</td>`
+      let h = `<tr class="${cls === 'you' ? 'you' : ''}"><td><b>${leadA(slug, l.title)}</b>${probe(slug) ? ' <span class="mo-chip">проба</span>' : ''}</td><td>${esc(d['город'] || '')}</td><td>${site(d['сайт'])}</td>`
         + `<td><span class="mo-chip ${cls}">${esc(stage)}</span></td><td class="why">${esc(d['почему'] || '')}</td><td>${esc(mailOf(d) || d['контакт'] || '')}</td>`
         + `<td>${hasLetter ? `<button type="button" class="mo-btn" data-letter="${esc(slug)}">${opened[slug] ? 'скрыть' : 'читать'}</button>` : ''}</td></tr>`;
       if (opened[slug]) {
@@ -750,7 +756,7 @@
     if (!document.getElementById('mo')) return;
     // строка статуса: решения — в чате, здесь только что происходит
     const working = S.slots.filter((a) => a.status === 'running').length;
-    const wait = Object.values(S.leads).filter((l) => l.status === 'проверено').length;
+    const wait = waiting();
     const st = S.boss.status === 'waiting' ? 'Босс ждёт вас в чате' + (wait ? ` · писем ждут «одобряю»: ${wait}` : '')
       : working ? `Офис работает — сотрудников за делом: ${working}` : S.boss.status === 'running' ? 'Офис работает' : !all.length ? '' : 'Тихо — напишите Боссу, что сделать';   // событий нет — говорит плашка над офисом
     set('mo-status', st + (wait && S.boss.status !== 'waiting' ? ` · писем ждут вашего «одобряю»: ${wait}` : ''));
@@ -777,7 +783,7 @@
   function csv() {
     const q = (v) => '"' + String(v ?? '').replace(/"/g, '""').trim() + '"';
     const head = ['Компания', 'Город', 'Сайт', 'Стадия', 'Почему подходит', 'Контакт', 'Тема', 'Письмо', 'Перевод'];
-    const lines = rows().map(([slug, l, d]) => [l.title, d['город'], d['сайт'], (STAGE[l.status] || [l.status])[0], d['почему'], mailOf(d) || d['контакт'], d['тема'], plain(d['письмо']), plain(d['перевод'])].map(q).join(';'));
+    const lines = rows().map(([slug, l, d]) => [l.title, d['город'], d['сайт'], (probe(slug) ? 'проба · ' : '') + (STAGE[l.status] || [l.status])[0], d['почему'], mailOf(d) || d['контакт'], d['тема'], plain(d['письмо']), plain(d['перевод'])].map(q).join(';'));
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob(['\ufeff' + [head.map(q).join(';'), ...lines].join('\r\n')], { type: 'text/csv;charset=utf-8' }));
     a.download = 'компании.csv'; document.body.appendChild(a); a.click(); a.remove();
