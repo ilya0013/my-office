@@ -11,7 +11,11 @@
       "WebSearch",
       "WebFetch",
       "Write(.claude/agents/**)",
-      "Edit(.claude/agents/**)"
+      "Edit(.claude/agents/**)",
+      "Bash(python -I -X utf8 scripts/team.py:*)",
+      "Bash(python3 -I -X utf8 scripts/team.py:*)",
+      "Bash(python -I -X utf8 scripts/build_agents.py)",
+      "Bash(python3 -I -X utf8 scripts/build_agents.py)"
     ],
     "deny": [
       "Read(**/.env)",
