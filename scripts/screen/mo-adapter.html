@@ -1,12 +1,28 @@
 <style>
-  /* Мой офис. Широкое окно (≥1100 px): слева офис — стоит на месте при прокрутке, справа «Сейчас от вас
-     нужно», доска компаний и команда. Узкое (встроенный браузер рядом с чатом): всё друг под другом */
+  /* Мой офис. Широкое окно (≥1100 px): слева офис и команда, справа вкладки «Сейчас от вас» и «Компании» —
+     колонка ровно по окну, листается только открытая вкладка. Узкое (встроенный браузер рядом с чатом):
+     офис сверху, под ним три вкладки (третья — «Команда») */
   body:not(.kiosk) #stage { width:min(100%, calc((100vh - var(--mo-reserve, 150px)) * 352 / 208)); margin:0 auto; }
-  body.mo-wide:not(.kiosk) #stage { --mo-reserve: 90px; }
+  body.mo-wide:not(.kiosk) #stage { --mo-reserve: 260px; }
   body.mo-wide #mo-layout { display:grid; grid-template-columns:minmax(0, var(--mo-office-w, 60%)) minmax(360px, 1fr); gap:12px; align-items:start; }
-  body.mo-wide #mo-left { position:sticky; top:8px; }
   #mo { display:flex; flex-direction:column; gap:8px; margin-top:8px; min-width:0; }
-  body.mo-wide #mo { margin-top:0; }
+  body.mo-wide #mo { margin-top:0; height:calc(100vh - 60px); }
+  body.mo-wide footer { display:none; }
+  body.mo-wide .wrap { padding-bottom:8px; }
+  #mo-team { margin-top:8px; }
+  #mo-tabs { display:flex; gap:4px; flex-wrap:wrap; }
+  #mo-tabs button { background:none; border:1px solid var(--line); color:var(--muted); border-radius:6px; padding:5px 12px; font:inherit; font-size:13px; cursor:pointer; }
+  #mo-tabs button[aria-selected="true"] { background:var(--panel); color:var(--text); border-color:#4a4f6b; }
+  #mo-tabs b { font-weight:600; margin-inline-start:4px; }
+  #mo-tabs b.you { color:#1a1c2c; background:#ffe08a; border-radius:9px; padding:0 6px; }
+  body.mo-wide #mo-tabs [data-tab="team"] { display:none; }   /* в широком команда под офисом */
+  #mo > [data-pane] { display:none; }
+  [data-motab="now"] #mo > [data-pane="now"], [data-motab="board"] #mo > [data-pane="board"], [data-motab="team"] #mo > [data-pane="team"] { display:block; }
+  body.mo-wide #mo > [data-pane] { flex:0 1 auto; min-height:0; overflow:auto; }
+  body.mo-wide #cards { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); column-gap:18px; }
+  body.mo-wide #mo-team { max-height:230px; overflow:auto; }
+  body.mo-wide #cards .card:nth-child(-n+2) { border-top:0; }
+  #mo > [data-pane] > h3 { display:none; }
   .mo-p { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:7px 10px; min-width:0; }
   .mo-p h3 { margin:0 0 5px; font-size:11.5px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; }
   #mo ul { list-style:none; margin:0; padding:0; font-size:13.5px; }
@@ -30,6 +46,7 @@
   .mo-how { font-size:12.5px; color:var(--muted); margin-top:4px; line-height:1.45; }
   .mo-how b { color:var(--text); font-weight:600; }
   #mo-now .hint { font-size:12px; color:var(--muted); padding-top:6px; }
+  .mo-go { background:none; border:0; padding:0; font:inherit; color:var(--link); text-decoration:underline; cursor:pointer; }
   .mo-card details summary { cursor:pointer; color:var(--link); font-size:12.5px; margin-top:3px; }
   .mo-letter { white-space:pre-wrap; background:#1d2033; border-radius:6px; padding:6px 8px; margin-top:4px; font-size:12.5px; line-height:1.4; }
   .mo-letter.tr { color:#c9cbe0; }
@@ -429,13 +446,16 @@
     // «Сейчас от вас нужно» — одно-два действия с готовой фразой; ничего не нужно — так и пишем
     const mgr = S.slots.some((a) => a.role === 'manager' && a.status === 'running');
     const found = of(['новый']), wait = of(['проверено']), ok = of(['одобрено']), need = [];
-    if (S.boss.status === 'waiting' && found.length && !mgr) need.push(`<li>Разведчик нашёл компаний: ${found.length}. Посмотрите колонку «Найдены» и напишите Боссу в чате `
-      + `${say('запускай все', 'pri')} — Менеджеры начнут писать письма. Кто-то лишний — ${say('убери имя')}.</li>`);
-    if (wait.length) need.push(`<li>Писем ждут вашего решения: ${wait.length}. Прочитайте письмо на карточке и напишите Боссу в чате «одобряю имя»`
-      + (wait.length > 1 ? ` или ${say('одобряю все', 'pri')}` : '') + '. Что будет после ответа — написано на карточке.</li>');
-    if (ok.length) need.push(`<li>Одобрено писем: ${ok.length}. Отправьте их со своей почты — кнопка «✉ открыть в своей почте» на карточке.</li>`);
+    const go = '<button type="button" class="mo-go" data-go="board">Компании</button>';
+    if (S.boss.status === 'waiting' && found.length && !mgr) need.push(`<li><b>Найдено компаний: ${found.length}.</b> Посмотрите их во вкладке ${go} и напишите Боссу`
+      + `<div class="mo-sub">${say('запускай все', 'pri')} — начнут писать письма · ${say('убери имя')} — уберёт лишнюю</div></li>`);
+    if (wait.length) need.push(`<li><b>Писем ждут вашего решения: ${wait.length}.</b> Прочитайте во вкладке ${go} и напишите Боссу «одобряю имя»`
+      + (wait.length > 1 ? `<div class="mo-sub">${say('одобряю все', 'pri')} — все письма сразу</div>` : '') + '</li>');
+    if (ok.length) need.push(`<li><b>Одобрено писем: ${ok.length}.</b> Отправьте со своей почты — кнопка ✉ на карточке во вкладке ${go}.</li>`);
     if (!need.length && S.boss.status === 'waiting') need.push(`<li>Босс ответил в чате и ждёт вас${S.waitText ? ': «' + esc(S.waitText) + '»' : ''}</li>`);
     document.getElementById('mo-now').classList.toggle('you', need.length > 0);
+    set('mo-now-n', need.length ? `<b class="you">${need.length}</b>` : '');
+    set('mo-board-n', leads.length ? `<b>${leads.length}</b>` : '');
     if (need.length) need.push('<li class="hint">Экран только показывает — отвечаете вы Боссу в чате. Фразу в рамке можно скопировать щелчком.</li>');
     set('mo-wait', need.join('') || `<li class="mute">${missing && !all.length ? 'Жду первого события — напишите Боссу в чате.' : 'Ничего — команда работает, можно просто смотреть.'}</li>`);
   }
@@ -473,13 +493,32 @@
     el.textContent = msg; el.style.display = 'block'; clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.style.display = 'none'; }, 2600);
   }
   document.addEventListener('click', (e) => {
+    const g = e.target.closest && e.target.closest('[data-go]');
+    if (g) { showTab(g.dataset.go); return; }
     const b = e.target.closest && e.target.closest('[data-say]'); if (!b) return;
     const text = b.dataset.say;
     copyText(text).then((ok) => toast(ok ? `«${text}» скопировано — вставьте в чат Боссу` : `Скопируйте вручную: ${text}`));
   });
 
-  let placed = false;
-  function place() { if (placed) return; placed = true; render(); }
+  // Вкладки; «Команда» в широком окне — под офисом слева
+  const TABS = ['now', 'board', 'team'];
+  let tab = 'now';
+  try { const t = localStorage.getItem('myoffice.tab2'); if (TABS.includes(t)) tab = t; } catch (_) {}
+  function showTab(t) {
+    tab = t; document.body.dataset.motab = t;
+    document.querySelectorAll('#mo-tabs [data-tab]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
+    try { localStorage.setItem('myoffice.tab2', t); } catch (_) {}
+  }
+  let placedWide = null;
+  function place(wide) {
+    const team = document.getElementById('mo-team'), left = document.getElementById('mo-left'), mo = document.getElementById('mo');
+    if (!team || !left || !mo || placedWide === wide) return;
+    if (placedWide === null) document.getElementById('mo-tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-tab]'); if (b) showTab(b.dataset.tab); });
+    placedWide = wide;
+    if (wide) left.appendChild(team); else mo.appendChild(team);
+    showTab(wide && tab === 'team' ? 'now' : tab);
+    render();
+  }
 
   window.MO = { snapshot, place, teamRow, linkText, empty: () => applied === 0, src: SRC, label: SRC === 'events.js' ? '' : 'демо: ' + SRC };
 
