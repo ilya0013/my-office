@@ -1,0 +1,431 @@
+<style>
+  /* Мой офис: раскладка. ≥1200 px — слева офис и команда, справа панели; уже — офис сверху, под ним вкладки */
+  body.mo-wide #mo-layout { display:grid; grid-template-columns:minmax(0,1fr) 380px; gap:12px; align-items:start; }
+  body.fit #stage { width:100%; }
+  #mo { display:flex; flex-direction:column; gap:8px; margin-top:8px; min-width:0; }
+  body.mo-wide #mo { margin-top:0; }
+  body.mo-wide.fit #stage { margin:0; }
+  .mo-p { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:7px 10px; min-width:0; }
+  #mo-team { margin-top:8px; }
+  .mo-p h3 { margin:0 0 5px; font-size:11.5px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; }
+  #mo-tabs { display:flex; gap:4px; flex-wrap:wrap; }
+  #mo-tabs button { background:none; border:1px solid var(--line); color:var(--muted); border-radius:6px; padding:4px 10px; font:inherit; font-size:12.5px; cursor:pointer; }
+  #mo-tabs button[aria-selected="true"] { background:var(--panel); color:var(--text); border-color:#4a4f6b; }
+  body.mo-wide #mo-tabs { display:none; }
+  body:not(.mo-wide) #mo > .mo-p:not([data-pane="wait"]) { display:none; }
+  body:not(.mo-wide)[data-motab="board"] #mo > [data-pane="board"], body:not(.mo-wide)[data-motab="flow"] #mo > [data-pane="flow"],
+  body:not(.mo-wide)[data-motab="team"] #mo > [data-pane="team"], body:not(.mo-wide)[data-motab="nums"] #mo > [data-pane="nums"] { display:block; }
+  body:not(.mo-wide) #mo > .mo-p:not([data-pane="wait"]) h3 { display:none; }
+  #mo ul, #mo-team ul { list-style:none; margin:0; padding:0; font-size:12.5px; }
+  #mo li { padding:3px 0; border-top:1px solid var(--line); overflow-wrap:anywhere; }
+  #mo li:first-child { border-top:0; }
+  body:not(.mo-wide) #mo-flow { max-height:40vh; overflow:auto; }
+  #mo .t { color:var(--muted); margin-inline-end:6px; font-variant-numeric:tabular-nums; }
+  #mo .w { color:#ffe08a; }
+  #mo .mute, .mo-st.empty { color:var(--muted); }
+  #mo .num { display:flex; justify-content:space-between; gap:8px; }
+  .mo-st { font-size:12.5px; padding:3px 0; border-top:1px solid var(--line); overflow-wrap:anywhere; }
+  .mo-st:first-child { border-top:0; }
+  .mo-chip { display:inline-block; font-size:11.5px; padding:0 7px; border-radius:9px; background:#33374d; color:#c9cbe0; margin-inline-end:6px; }
+  .mo-st.hot .mo-chip { background:#5a4a12; color:#ffe08a; } .mo-st.good .mo-chip { background:#1f5130; color:#9ff0b4; } .mo-st.bad .mo-chip { background:#2b2e40; color:#8b8da3; }
+  .mo-st.bad a { color:#8b8da3; }
+  /* команда — строками */
+  #cards { display:block; margin-top:0; max-height:none; }
+  #cards .card { background:none; border:0; border-top:1px solid var(--line); border-radius:0; padding:4px 0; }
+  #cards .card:first-child { border-top:0; }
+  .mo-tr { display:flex; align-items:center; gap:7px; font-size:12.5px; min-width:0; white-space:nowrap; }
+  .mo-tr .sw { width:9px; height:9px; border-radius:50%; flex:none; }
+  .mo-tr b { cursor:pointer; }
+  .mo-tr .pill { margin:0; flex:none; }
+  .mo-tr .mo-task { min-width:0; flex:0 1 auto; overflow:hidden; text-overflow:ellipsis; }
+  .mo-tr .mo-step { min-width:0; flex:1 1 0; overflow:hidden; text-overflow:ellipsis; color:var(--muted); }
+  #cards .steps { margin:1px 0 0 16px; font-size:12px; }
+  /* кнопки-фразы: клик копирует текст для чата с Боссом */
+  .mo-say { background:#2b2f47; color:var(--text); border:1px solid #4a4f6b; border-radius:12px; padding:1px 9px; margin:2px 4px 2px 0; font:inherit; font-size:12px; cursor:pointer; }
+  .mo-say:hover { border-color:var(--link); }
+  .mo-say.pri { background:#4a3d12; border-color:#8a7020; color:#ffe08a; }
+  .mo-sub { margin-top:2px; }
+  #mo-help summary { cursor:pointer; color:var(--muted); font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.6px; }
+  #mo-help h4 { margin:6px 0 2px; font-size:12px; color:var(--muted); font-weight:600; }
+  body:not(.mo-wide) #mo-help summary { display:none; }
+  #mo-toast { position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#1f5130; color:#dcffe2; border-radius:8px; padding:7px 14px; font-size:13px; z-index:20; box-shadow:0 6px 20px rgba(0,0,0,.4); display:none; }
+  body:not(.mo-wide)[data-motab="help"] #mo > [data-pane="help"] { display:block; }
+</style>
+<script>
+/* «Мой офис»: события хуков (экран/events.js, строки ev({...});) → снимок в формате ленты Cubicle
+   (docs/FEED.md). Файл перечитывается тегом <script> раз в 2 с, поэтому страница работает с двойного
+   щелчка (file://), без сервера. ?src=имя.js — другой файл; demo*.js проигрывается по событию в 0,7 с. */
+(function () {
+  'use strict';
+  const q = new URLSearchParams(location.search);
+  const SRC = /^[\w.-]+\.js$/.test(q.get('src') || '') ? q.get('src') : 'events.js';
+  const PLAY = /^demo/i.test(SRC) || q.has('play');
+  const STEP_MS = Math.max(100, Number(q.get('step')) || 1300);
+  const BASE_COLUMNS = ['новый', 'разобран', 'не подходит', 'письмо готово', 'одобрено', 'отправлено', 'ответ', 'встреча', 'отказ'];
+  // колонки конвейера: известные статусы и встреченные в файлах новые (перед «одобрено»)
+  const cols = () => { const k = BASE_COLUMNS.indexOf('одобрено'); return [...BASE_COLUMNS.slice(0, k), ...S.extra, ...BASE_COLUMNS.slice(k)]; };
+  const NAMES = { boss: 'Босс', scout: 'Разведчик', auditor: 'Аудитор', manager: 'Менеджер', worker: 'Сотрудник' };
+  const TITLES = { boss: 'руководитель', scout: 'ищет компании', auditor: 'разбирает компании', manager: 'пишет письма', worker: 'помощник' };
+  const COLORS = { 'Вы': '#ffffff', 'Босс': '#ffd75e', 'Разведчик': '#6fcf97', 'Аудитор': '#9ec5ff', 'Менеджер': '#f0a35e', 'Сотрудник': '#c9cbe0' };
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const short = (s, n = 60) => { s = String(s || '').replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
+  const baseName = (n) => String(n || '').replace(/ \d+$/, '');
+
+  let buf = [];
+  window.ev = (e) => { if (e && typeof e === 'object') buf.push(e); };
+
+  let S, all = [], applied = 0, zeroReads = 0, t0 = 0, missing = false;
+  function mk(id, role, name, since) {
+    return { id, role, name, status: 'idle', task: '', step: '', recent: [], parent: null, since, completedAt: null, assignedAt: null, returnedAt: null };
+  }
+  function reset() {
+    S = { boss: mk('boss', 'boss', 'Босс', 0), slots: [], byAgent: new Map(), bySession: new Map(), bossSession: '',
+      pending: [], leads: {}, flow: [], extra: [], written: new Set(), maxPar: 0, acts: {}, waitText: '', seq: 1 };
+    applied = 0;
+  }
+  reset();
+
+  // guess: роль угадывается по тексту (описание задания) — незнакомое слово тогда не роль
+  function roleOf(t, guess) {
+    t = String(t || '').toLowerCase().trim();
+    if (/scout|развед/.test(t)) return 'scout';
+    if (/audit|аудит/.test(t)) return 'auditor';
+    if (/manag|менедж/.test(t)) return 'manager';
+    const k = t.replace(/[^\wа-яё-]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 24);
+    return guess || !k ? 'worker' : 'w-' + k;
+  }
+  const nameOf = (role) => NAMES[role] || (role.startsWith('w-') ? role[2].toUpperCase() + role.slice(3) : 'Сотрудник');
+  const titleOf = (role) => TITLES[role] || 'сотрудник';
+  // путь от корня проекта (cwd события); вне проекта — «…/имя», такой путь не станет ссылкой
+  function rel(p, root) {
+    const s = String(p || '').replace(/\\/g, '/'), r = String(root || '').replace(/\\/g, '/').replace(/\/+$/, '');
+    if (r && s.toLowerCase().startsWith(r.toLowerCase() + '/')) return s.slice(r.length + 1);
+    if (!/^([a-z]:)?\//i.test(s)) return s;
+    const parts = s.split('/').filter(Boolean);
+    const k = Math.max(parts.lastIndexOf('лиды'), parts.lastIndexOf('письма'));
+    return k >= 0 ? parts.slice(k).join('/') : '…/' + (parts.pop() || '');
+  }
+  function host(u) { try { return new URL(u).host.replace(/^www\./, ''); } catch (_) { return short(u, 30); } }
+  function describe(e) {
+    const n = String(e.tool_name || '').toLowerCase(), i = e.tool_input || {};
+    if (/websearch|web_search|search_query/.test(n)) return '🔎 поиск: ' + short(i.query || i.q || (i.search_query && i.search_query[0] && i.search_query[0].q), 50);
+    if (/webfetch|web_fetch|fetch|open_url/.test(n)) return '🌐 открыл сайт: ' + host(i.url || i.ref_id || '');
+    if (/^(write|create|write_file)$/.test(n) || /^(edit|multiedit|str_replace|replace)$/.test(n)) return '✍ пишет ' + short(rel(i.file_path || i.path, e.cwd), 60);
+    if (/apply_patch/.test(n)) { const f = patchFiles(patchText(e)).map((x) => rel(x.path, e.cwd)); return '✍ пишет ' + short(f.join(', ') || 'файлы', 60); }
+    if (/^(read|read_file|view)$/.test(n)) return '📖 читает ' + short(rel(i.file_path || i.path, e.cwd), 60);
+    if (/^(glob|grep|ls|list_directory|search_file_content)$/.test(n)) return '🗂 смотрит папку ' + short(i.pattern || i.path || '', 30);
+    if (/^(agent|task)$/.test(n) || /spawn_agent/.test(n)) return '📨 → ' + nameOf(roleOf(i.subagent_type || i.agent_type || i.role, !(i.subagent_type || i.agent_type || i.role)));
+    if (/wait/.test(n)) return '⏳ ждёт сотрудников';
+    if (/exec|shell|bash|command/.test(n)) return '⌨ команда: ' + short([].concat(i.cmd || i.command || '').join(' '), 36);
+    if (/todo|plan/.test(n)) return '✅ составляет план';
+    return n ? '⚙ ' + short(e.tool_name, 24) : '';
+  }
+
+  // Статусы компаний: файл лиды/<имя>.md (не _шаблон) и строка «статус: X» в том, что пишется.
+  function strings(x, out = []) {
+    if (typeof x === 'string') out.push(x);
+    else if (x && typeof x === 'object') for (const v of Object.values(x)) strings(v, out);
+    return out;
+  }
+  function patchText(e) { return strings(e.tool_input).find((s) => s.includes('*** Begin Patch') || /\*\*\* (Add|Update) File:/.test(s)) || ''; }
+  function patchFiles(text) {
+    const out = [], re = /\*\*\* (?:Add|Update) File: ([^\r\n]+)\r?\n([\s\S]*?)(?=\r?\n\*\*\* |$)/g;
+    let m;
+    while ((m = re.exec(text))) out.push({ path: m[1].trim(), text: m[2].split(/\r?\n/).filter((l) => l[0] === '+').map((l) => l.slice(1)).join('\n') });
+    return out;
+  }
+  function leadWrites(e) {
+    const n = String(e.tool_name || '').toLowerCase(), i = e.tool_input || {};
+    const path = i.file_path || i.path || '';
+    if (/^(write|create|write_file)$/.test(n)) return [{ path, text: String(i.content || i.contents || '') }];
+    if (/^(edit|str_replace|replace)$/.test(n)) return [{ path, text: String(i.new_string || i.new_str || '') }];
+    if (n === 'multiedit') return [{ path, text: (i.edits || []).map((x) => x.new_string || '').join('\n') }];
+    const p = patchText(e);
+    return p ? patchFiles(p) : [];
+  }
+  function trackLeads(e, who, at) {
+    for (const w of leadWrites(e)) {
+      S.written.add(rel(w.path, e.cwd));
+      const f = String(w.path).match(/(?:^|[\\/])лиды[\\/]+([^\\/]+?)\.md\s*$/i);
+      if (!f || f[1].startsWith('_')) continue;
+      const st = w.text.match(/(?:^|\n)[\s>*-]*\**статус\**\s*:\s*`?([^`\r\n]+?)`?\s*(?:\r?\n|$)/i);
+      const co = w.text.match(/(?:^|\n)\s*\**компания\**\s*:\s*([^\r\n]+)/i);
+      const slug = f[1], lead = S.leads[slug];
+      if (lead && co) lead.title = short(co[1].replace(/\s*\(.*$/, ''), 40);
+      if (!st) continue;
+      const status = st[1].trim().toLowerCase().replace(/[.;,]+$/, '');
+      if (!BASE_COLUMNS.includes(status) && !S.extra.includes(status)) {
+        if (!/^[a-zа-яё][a-zа-яё -]{0,28}$/i.test(status)) continue;   // «новый | разобран» из шаблона — не статус
+        S.extra.push(status);
+      }
+      if (!lead) S.leads[slug] = { title: co ? short(co[1].replace(/\s*\(.*$/, ''), 40) : slug, status, by: who.name, at };
+      else if (lead.status !== status) { lead.status = status; lead.by = who.name; lead.at = at; }
+      else continue;
+      flow(at, who.name, '📋', status, slug);
+    }
+  }
+
+  function flow(at, from, to, text, slug) { S.flow.push({ at, from, to, text, slug }); if (S.flow.length > 200) S.flow.shift(); }
+  function step(a, text, at) {
+    if (!text) return;
+    a.step = text;
+    a.recent.push([at, text]);
+    if (a.recent.length > 10) a.recent.shift();
+  }
+  const runningSubs = () => S.slots.filter((x) => x.status === 'running').length;
+
+  function startSlot(e, at) {
+    const role = roleOf(e.agent_type || e.agent_role || e.subagent_type);
+    let k = S.pending.findIndex((p) => p.role === role);
+    if (k < 0 && S.pending.length) k = 0;
+    const job = k >= 0 ? S.pending.splice(k, 1)[0] : null;
+    // Свободный сотрудник той же роли берёт новое задание сам; одновременно занятым заводим «Аудитор 2».
+    let a = S.slots.find((x) => x.role === role && x.status !== 'running');
+    if (!a) {
+      const n = S.slots.filter((x) => x.role === role).length + 1;
+      a = mk(`${role}-${n}`, role, nameOf(role) + (n > 1 ? ' ' + n : ''), S.seq++);
+      a.parent = 'boss';
+      S.slots.push(a);
+    }
+    a.status = 'running'; a.task = job ? job.desc : ''; a.recent = []; a.assignedAt = at; a.step = '';
+    step(a, '📥 получил задание', at);
+    if (e.agent_id) S.byAgent.set(e.agent_id, a);
+    if (e.session_id && S.bossSession && e.session_id !== S.bossSession) S.bySession.set(e.session_id, a);
+    flow(at, 'Босс', a.name, a.task || 'новое задание');
+    S.maxPar = Math.max(S.maxPar, runningSubs());
+    return a;
+  }
+  function stopSlot(a, e, at) {
+    if (a.status !== 'running') return;
+    a.status = 'idle'; a.completedAt = a.returnedAt = at;
+    step(a, '✅ сдал работу', at);
+    const m = String(e.last_assistant_message || '').match(/Главное:\s*([^\r\n]+)/);
+    flow(at, a.name, 'Босс', 'сдал работу' + (m ? ' — ' + short(m[1], 90) : ''));
+  }
+  function actor(e, kind) {
+    if (e.agent_id) return S.byAgent.get(e.agent_id) || (kind === 'SubagentStart' ? null : startSlot(e, Date.now()));
+    const sid = e.session_id || '';
+    if (sid && !S.bossSession && kind !== 'SubagentStart') S.bossSession = sid;
+    if (sid && S.bossSession && sid !== S.bossSession) {
+      // Codex: у субагента свой session_id; без agent_id привязываем его к последнему запущенному
+      let a = S.bySession.get(sid);
+      if (!a) { a = [...S.slots].reverse().find((x) => x.status === 'running' && ![...S.bySession.values()].includes(x)); if (a) S.bySession.set(sid, a); }
+      if (a) return a;
+      // никто из сотрудников не работает — это новая сессия самого Босса (владелец открыл новый чат)
+      S.bossSession = sid;
+    }
+    return S.boss;
+  }
+
+  function apply(e, at) {
+    const kind = e.hook_event_name || e.event || e.type || '';
+    if (kind === 'SubagentStart') {
+      const known = e.agent_id && S.byAgent.get(e.agent_id);
+      if (!known) startSlot(e, at);
+      return;
+    }
+    const who = actor(e, kind), B = S.boss;
+    if (kind === 'SubagentStop') { if (who !== B) stopSlot(who, e, at); return; }
+    if (kind === 'Stop') {
+      if (who !== B) { stopSlot(who, e, at); return; }
+      B.completedAt = at;
+      const bg = (e.background_tasks || []).some((t) => t && t.status === 'running') || runningSubs() > 0;
+      if (bg) { B.status = 'running'; step(B, '⏳ ждёт сотрудников', at); }   // сидит за столом и ждёт отчётов
+      else {
+        B.status = 'waiting';
+        S.waitText = short(String(e.last_assistant_message || '').split(/\r?\n/).find((l) => l.trim()) || '', 140);
+        step(B, '🙋 ждёт вас', at);
+        flow(at, 'Босс', 'Вы', 'ждёт вашего решения' + (S.waitText ? ' — ' + S.waitText : ''));
+      }
+      return;
+    }
+    if (kind === 'UserPromptSubmit') {
+      if (who !== B) return;
+      const p = String(e.prompt || '');
+      B.status = 'running'; S.waitText = '';
+      if (/^\s*<task-notification>/.test(p)) step(B, '📬 читает отчёт', at);
+      else { B.task = short(p, 80); step(B, '💬 задание от вас', at); flow(at, 'Вы', 'Босс', short(p, 90)); }
+      return;
+    }
+    if (kind === 'PostToolUse') { trackLeads(e, who, at); return; }
+    if (!e.tool_name) return;
+    const n = String(e.tool_name).toLowerCase(), i = e.tool_input || {};
+    who.status = 'running';
+    if (who === B) S.waitText = '';
+    if (/^(agent|task)$/.test(n) || /spawn_agent/.test(n)) {
+      const t0 = i.subagent_type || i.agent_type || i.role;
+      const role = t0 ? roleOf(t0) : roleOf(i.description, true);
+      let desc = short(i.description || i.message || i.prompt || i.task || '', 70);
+      desc = desc.replace(new RegExp('^' + nameOf(role).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*:\\s*', 'i'), '');
+      S.pending.push({ role, desc });
+    }
+    step(who, describe(e), at);
+    const nm = baseName(who.name);
+    S.acts[nm] = (S.acts[nm] || 0) + 1;
+    trackLeads(e, who, at);
+  }
+
+  function out(a) {
+    const t = a.status === 'waiting' ? (S.waitText || 'ждёт вашего решения') : a.task;
+    return { id: a.id, name: a.name, role: titleOf(a.role), status: a.status, since: a.since,
+      task: t || a.step ? { title: t || '', step: a.status === 'running' ? a.step : '' } : null,
+      parent: a.parent, recent: a.recent.slice(), completedAt: a.completedAt, assignedAt: a.assignedAt, returnedAt: a.returnedAt };
+  }
+
+  let loading = null, lastTry = 0;
+  function readFile() {
+    if (loading) return loading;
+    loading = new Promise((res) => {
+      buf = [];
+      const el = document.createElement('script');
+      el.src = SRC + '?t=' + Date.now();
+      el.onload = () => { el.remove(); res(buf.slice()); };
+      el.onerror = () => { el.remove(); res(null); };
+      document.head.appendChild(el);
+    }).then((x) => { loading = null; return x; });
+    return loading;
+  }
+
+  async function snapshot() {
+    // нет файла — браузер пишет в консоль ошибку загрузки; пока файла нет, проверяем реже (раз в 6 с)
+    const skip = missing && Date.now() - lastTry < 6000;
+    if (!skip) lastTry = Date.now();
+    let got = skip ? null : await readFile();
+    missing = got === null;
+    if (got) {
+      const other = got.length && all.length && got[0].session_id && all[0].e.session_id && got[0].session_id !== all[0].e.session_id;
+      if (got.length < all.length || other) {
+        // ноль событий после непустого файла — строка дописывается или файл битый: держим, что показано
+        if (got.length === 0) got = null;
+        else { reset(); all = []; t0 = 0; }
+      }
+      if (got) { zeroReads = 0; for (let i = all.length; i < got.length; i++) all.push({ e: got[i] }); }
+    }
+    if (all.length && !t0) t0 = Date.now();
+    const limit = PLAY ? Math.min(all.length, Math.floor((Date.now() - t0) / STEP_MS) + 1) : all.length;
+    while (applied < limit) { try { apply(all[applied].e, Date.now()); } catch (_) {} applied++; }
+    render();
+    return { company: '', agents: [S.boss, ...S.slots].map(out) };
+  }
+
+  // ---------- панели ----------
+  const hhmm = (ms) => new Date(ms).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const HUES = ['#e07ab8', '#3bc4c4', '#c9b458', '#a66de0', '#f07b3f'];
+  const colorOf = (n) => COLORS[n] || HUES[[...n].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 0) % HUES.length];
+  const who = (n) => `<b style="color:${colorOf(baseName(n))}">${esc(n)}</b>`;
+  const COL_CLASS = { 'письмо готово': 'hot', 'не подходит': 'bad', 'отказ': 'bad', 'одобрено': 'good', 'отправлено': 'good', 'ответ': 'good', 'встреча': 'good' };
+  const set = (id, html) => { const el = document.getElementById(id); if (el && el.innerHTML !== html) el.innerHTML = html; };
+  // Ссылки на файлы проекта: страница лежит в экран/, корень проекта — '../'. .md откроется текстом.
+  const fileA = (path, text) => (PLAY || !S.written.has(path) ? text : `<a href="../${esc(encodeURI(path))}" target="_blank" rel="noopener" title="откроется текстом">${text}</a>`);
+  const FILE_RE = /(^|[\s,(])((?:[\wА-Яа-яЁё.-]+\/)*[\wА-Яа-яЁё-][\wА-Яа-яЁё.-]*\.(?:md|txt|csv|json|html))(?=$|[\s,;)])/g;
+  function linkText(text) { return esc(text).replace(FILE_RE, (m, pre, path) => pre + fileA(path, path)); }
+  const leadA = (slug, text) => fileA(`лиды/${slug}.md`, esc(text));
+  const letterA = (slug, status) => (cols().indexOf(status) >= 3 && !PLAY && S.written.has(`письма/${slug}.md`) ? ' · ' + fileA(`письма/${slug}.md`, 'письмо') : '');
+  function linkSlugs(html) {
+    for (const slug of Object.keys(S.leads)) {
+      const re = new RegExp('(^|[\\s:(])(' + slug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')(?=$|[\\s,.;:)])', 'g');
+      html = html.replace(re, (m, pre, x) => pre + leadA(slug, x));
+    }
+    return html;
+  }
+  function teamRow(s, label) {
+    const t = s.task || {};
+    return `<div class="mo-tr"><span class="sw" style="background:${esc(s.shirt)}"></span><b class="pick" data-id="${esc(s.id)}">${esc(s.name)}</b>`
+      + `<span class="pill p-${esc(s.status)}">${label}</span><span class="mo-task" title="${esc(t.title || '')}">${linkSlugs(esc(t.title || ''))}</span>`
+      + `<span class="mo-step">${linkText(t.step || '')}</span></div>`;
+  }
+  function render() {
+    if (!document.getElementById('mo')) return;
+    const wide = document.body.classList.contains('mo-wide');
+    const leads = Object.entries(S.leads);
+    const by = (c) => leads.filter(([, l]) => l.status === c);
+    const empty = cols().filter((c) => !by(c).length);
+    set('mo-board', (leads.length ? cols().filter((c) => by(c).length).map((c) => `<div class="mo-st ${COL_CLASS[c] || ''}"><span class="mo-chip">${esc(c)} <b>${by(c).length}</b></span>`
+      + by(c).map(([slug, l]) => leadA(slug, l.title) + letterA(slug, c)).join(', ') + '</div>').join('')
+      : '<div class="mo-st empty">Компаний пока нет — их найдёт Разведчик.</div>')
+      + (leads.length && empty.length ? `<div class="mo-st empty">пусто: ${esc(empty.join(', '))}</div>` : ''));
+    const file = (slug) => (PLAY ? ' · <span class="mute">в демо файлов нет</span>' : S.written.has(`письма/${slug}.md`) ? ' · ' + fileA(`письма/${slug}.md`, 'открыть файл') : '');
+    const wait = by('письмо готово').map(([slug, l]) => `<li>✉ ${leadA(slug, l.title)} — письмо готово<div class="mo-sub">${say('покажи письмо ' + slug, 'pri')}<span class="mute">Босс покажет письмо в чате</span></div>`
+      + `<div class="mo-sub">${say('одобряю ' + slug)}${say('перепиши письмо ' + slug + ' короче')}${file(slug)}</div></li>`);
+    if (S.boss.status === 'waiting') wait.unshift(wait.length ? `<li class="w">🙋 Босс ждёт вас${S.waitText ? ': ' + esc(S.waitText) : ''}</li>`
+      : `<li class="w">🙋 Босс ждёт ответа — посмотрите чат<div class="mo-sub">${say('что в работе?')}</div></li>`);
+    set('mo-wait', wait.join('') || '<li class="mute">Пока ничего — команда работает.</li>');
+    set('mo-flow', S.flow.slice(wide ? -8 : -80).reverse().map((f) => `<li><span class="t">${hhmm(f.at)}</span>`
+      + (f.to === '📋' ? `📋 ${who(f.from)}: ${f.slug && S.leads[f.slug] ? leadA(f.slug, S.leads[f.slug].title) : ''} → ${esc(f.text)}${f.slug ? letterA(f.slug, f.text) : ''}`
+        : `${who(f.from)} → ${who(f.to)}: ${linkSlugs(esc(f.text))}`) + '</li>').join('')
+      || `<li class="mute">${missing ? 'Жду первого события — напишите Боссу.' : 'Пока тихо.'}</li>`);
+    const nums = [['Компаний в работе', leads.length]];
+    for (const c of cols()) if (by(c).length) nums.push(['· ' + c, by(c).length]);
+    nums.push(['Работало одновременно (максимум)', S.maxPar], ['Сотрудников за сессию', S.slots.length]);
+    const acts = Object.entries(S.acts).sort((a, b) => b[1] - a[1]);
+    set('mo-nums', nums.map(([k, v]) => `<li class="num"><span>${esc(k)}</span><b>${v}</b></li>`).join('')
+      + (acts.length ? `<li><span class="mute">Действий:</span> ${acts.map(([k, v]) => `${who(k)} ${v}`).join(' · ')}</li>` : ''));
+  }
+
+  const say = (text, cls = '') => `<button type="button" class="mo-say ${cls}" data-say="${esc(text)}">${esc(text)}</button>`;
+  function copyText(text) {
+    const fallback = () => {
+      const t = document.createElement('textarea'); t.value = text; t.setAttribute('readonly', ''); t.style.position = 'fixed'; t.style.opacity = '0';
+      document.body.appendChild(t); t.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (_) {} t.remove(); return ok;
+    };
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text).then(() => true, fallback);
+    return Promise.resolve(fallback());
+  }
+  let toastTimer = 0;
+  function toast(msg) {
+    let el = document.getElementById('mo-toast');
+    if (!el) { el = document.createElement('div'); el.id = 'mo-toast'; document.body.appendChild(el); }
+    el.textContent = msg; el.style.display = 'block'; clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.style.display = 'none'; }, 2600);
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest && e.target.closest('[data-say]'); if (!b) return;
+    const text = b.dataset.say;
+    copyText(text).then((ok) => toast(ok ? `«${text}» скопировано — вставьте в чат Боссу` : `Скопируйте вручную: ${text}`));
+  });
+  // шпаргалка: те же группы, что у Босса; фразы с «…» копируются как есть
+  const HELP = [['Работа', ['найди 3 компании', 'что в работе?', 'пропусти …']], ['Письма', ['покажи письмо …', 'одобряю …', 'отправил …', 'ответ от …: …']],
+    ['Команда', ['найми …', 'кто в команде?', 'измени …: …']], ['Настройки', ['настрой заново', 'помощь']]];
+  function renderHelp() {
+    set('mo-help-body', HELP.map(([g, list]) => `<h4>${esc(g)}</h4>` + list.map((x) => say(x)).join('')).join('')
+      + '<div class="mute" style="margin-top:6px;font-size:12px">Кнопка копирует фразу — вставьте её в чат Боссу и допишите, где «…».</div>');
+  }
+
+  // Вкладки (узкий экран) и место «Команды»: под офисом слева или вкладкой
+  const TABS = ['board', 'flow', 'team', 'nums', 'help'];
+  let tab = 'board';
+  try { const t = localStorage.getItem('myoffice.tab'); if (TABS.includes(t)) tab = t; } catch (_) {}
+  function showTab(t) {
+    tab = t; document.body.dataset.motab = t;
+    document.querySelectorAll('#mo-tabs [data-tab]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
+  }
+  let placedWide = null;
+  function place(wide) {
+    const team = document.getElementById('mo-team'), left = document.getElementById('mo-left'), mo = document.getElementById('mo');
+    if (!team || !left || !mo || placedWide === wide) return;
+    placedWide = wide;
+    if (wide) left.appendChild(team); else mo.appendChild(team);
+    const hd = document.getElementById('mo-help'); if (hd) hd.open = !wide;   // в широком — свёрнут
+    renderHelp();
+    if (!document.body.dataset.motab) {
+      showTab(tab);
+      document.getElementById('mo-tabs').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-tab]'); if (!b) return;
+        showTab(b.dataset.tab); try { localStorage.setItem('myoffice.tab', b.dataset.tab); } catch (_) {}
+      });
+    }
+    render();
+  }
+
+  window.MO = { snapshot, place, teamRow, linkText, empty: () => applied === 0, src: SRC, label: SRC === 'events.js' ? '' : 'демо: ' + SRC };
+
+  // ---------- без сервера: всё сетевое отвечает локально ----------
+  // Cubicle читает /config.json и ленту /api/feed; остальное (настройки, Telegram, GitHub, обновления) — «нет».
+  const json = (x) => new Response(JSON.stringify(x), { status: 200, headers: { 'content-type': 'application/json' } });
+  window.fetch = function (u) {
+    const url = String((u && u.url) || u || '');
+    if (/(^|\/)config\.json$/.test(url)) return Promise.resolve(json({ source: 'feed', label: '' }));
+    if (url === '/api/feed') return snapshot().then(json);
+    return Promise.resolve(new Response('', { status: 404, statusText: 'Not Found' }));
+  };
+})();
+</script>
