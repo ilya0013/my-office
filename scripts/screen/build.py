@@ -129,6 +129,7 @@ rep('''    if (s.typing && s.task) {
     if (s.typing && s.task) {
       // the task code''')
 rep("g.fillText(`Cubicle · ${officeName}`, 4, 4.8);", "g.fillText('Мой офис', 4, 4.8);")
+rep("['✋ ' + ((t && t.identifier) || L.waitBubble), 'wait']", "[(t && t.identifier) ? '✋ ' + t.identifier : L.waitBubble, 'wait']")   # одна рука, не «✋ ✋ ждёт вас»
 rep("a.download = 'cubicle-appearance.json';", "a.download = 'moy-ofis-vneshnost.json';")
 rep("document.getElementById('co').textContent = labels.join(' · ');", "document.getElementById('co').textContent = window.MO ? window.MO.label : '';")
 # 6. настройки: без серверных разделов (Telegram, настройки сервера)

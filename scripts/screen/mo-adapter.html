@@ -89,18 +89,46 @@
   function describe(e) {
     const n = String(e.tool_name || '').toLowerCase(), i = e.tool_input || {};
     // Codex: webrun — поиск (search_query[].q) или открытие найденных страниц (open[])
-    if (n === 'webrun') return i.search_query && i.search_query.length ? '🔎 поиск: ' + short(i.search_query[0].q, 50) : '🌐 открывает страницы';
+    if (n === 'webrun') { const u = ((i.open || [])[0] || {}).ref_id || ''; return i.search_query && i.search_query.length ? '🔎 поиск: ' + short(i.search_query[0].q, 50) : '🌐 открывает ' + (/^https?:/.test(u) ? host(u) : 'страницы'); }
     if (/websearch|web_search|search_query/.test(n)) return '🔎 поиск: ' + short(i.query || i.q || (i.search_query && i.search_query[0] && i.search_query[0].q), 50);
     if (/webfetch|web_fetch|fetch|open_url/.test(n)) return '🌐 открыл сайт: ' + host(i.url || i.ref_id || '');
-    if (/^(write|create|write_file)$/.test(n) || /^(edit|multiedit|str_replace|replace)$/.test(n)) return '✍ пишет ' + short(rel(i.file_path || i.path, e.cwd), 60);
-    if (/apply_patch/.test(n)) { const f = patchFiles(patchText(e)).map((x) => rel(x.path, e.cwd)); return '✍ пишет ' + short(f.join(', ') || 'файлы', 60); }
-    if (/^(read|read_file|view)$/.test(n)) return '📖 читает ' + short(rel(i.file_path || i.path, e.cwd), 60);
-    if (/^(glob|grep|ls|list_directory|search_file_content)$/.test(n)) return '🗂 смотрит папку ' + short(i.pattern || i.path || '', 30);
+    if (/^(write|create|write_file)$/.test(n) || /^(edit|multiedit|str_replace|replace)$/.test(n)) return '✍ пишет ' + what(rel(i.file_path || i.path, e.cwd));
+    if (/apply_patch/.test(n)) { const f = patchFiles(patchText(e)).map((x) => what(rel(x.path, e.cwd))); return '✍ пишет ' + short([...new Set(f)].join(', ') || 'файлы', 60); }
+    if (/^(read|read_file|view)$/.test(n)) return '📖 читает ' + what(rel(i.file_path || i.path, e.cwd));
+    if (/^(glob|grep|ls|list_directory|search_file_content)$/.test(n)) return '🗂 смотрит папку';
     if (/^(agent|task)$/.test(n) || /spawn_agent/.test(n)) return '📨 → ' + nameOf(roleOf(i.subagent_type || i.agent_type || i.role, !(i.subagent_type || i.agent_type || i.role)));
     if (/wait/.test(n)) return '⏳ ждёт сотрудников';
-    if (/exec|shell|bash|command/.test(n)) return '⌨ команда: ' + short([].concat(i.cmd || i.command || '').join(' '), 36);
+    if (/user_input|askuserquestion/.test(n)) return '❓ спрашивает вас в чате';
+    if (/browser|cua|playwright|repl/.test(n)) { const u = (String(i.code || i.url || '').match(/https?:\/\/[^\s"'`)]+/) || [''])[0]; return '🌐 смотрит сайт' + (u ? ' ' + host(u) : ''); }
+    if (/exec|shell|bash|command/.test(n)) return command([].concat(i.cmd || i.command || '').join(' '), e.cwd);
     if (/todo|plan/.test(n)) return '✅ составляет план';
-    return n ? '⚙ ' + short(e.tool_name, 24) : '';
+    return n ? '⚙ работает' : '';
+  }
+  // Файл — словами: досье и письмо компании, каталог, правила, своя инструкция
+  function what(p) {
+    p = String(p || '');
+    const m = p.match(/(лиды|письма|ответы)\/([^\/]+?)\.md$/);
+    if (m && m[2].startsWith('_')) return 'шаблон досье';
+    if (m) { const t = (S.leads[m[2]] && S.leads[m[2]].title) || m[2]; return { 'лиды': 'досье ', 'письма': 'письмо ', 'ответы': 'ответ ' }[m[1]] + t; }
+    if (/каталог\.md$/.test(p)) return 'каталог';
+    if (/ПРАВИЛА\.md$/i.test(p)) return 'правила';
+    if (/роли\//.test(p)) return 'свою инструкцию';
+    if (/входящие\.md$/.test(p)) return 'входящие';
+    if (/(^|\/)_шаблон/.test(p)) return 'шаблон досье';
+    if (/SKILL\.md$/i.test(p)) return 'инструкцию инструмента';
+    return short(p.split('/').pop() || 'файл', 40);
+  }
+  // Команда (Codex читает и правит файлы командами) — по смыслу, без текста команды
+  function command(c, cwd) {
+    const files = [...String(c).matchAll(/[\wА-Яа-яЁё\/:.\\-]+\.md/g)].map((m) => what(rel(m[0], cwd)));
+    const list = short([...new Set(files)].join(', '), 50);
+    if (/Invoke-WebRequest|curl|wget/i.test(c)) return '🌐 открывает сайт';
+    // правят сотрудники только досье и письма; каталог, правила и роли в команде — это чтение
+    const own = short([...new Set(files.filter((f) => /^(досье|письмо|ответ) /.test(f)))].join(', '), 50);
+    if (/Set-Content|Out-File|WriteAllText|Add-Content|\.Replace\(|sed\s+-i|>\s*\S+\.md/i.test(c)) return '✍ правит ' + (own || 'файлы');
+    if (/Get-Content|\bcat\b|\btype\b|Select-String|\brg\b|\bgrep\b/i.test(c)) return '📖 читает ' + (list || 'файлы');
+    if (/Get-ChildItem|\bls\b|\bdir\b/i.test(c)) return '🗂 смотрит папку';
+    return '⚙ работает';
   }
 
   // Статусы компаний: файл лиды/<имя>.md (не _шаблон) и строка «статус: X» в том, что пишется.
@@ -405,7 +433,7 @@
     // строка статуса: решения — в чате, здесь только что происходит
     const working = S.slots.filter((a) => a.status === 'running').length;
     const wait = Object.values(S.leads).filter((l) => l.status === 'проверено').length;
-    const st = S.boss.status === 'waiting' ? `Босс ждёт вас в чате${S.waitText ? ': «' + esc(S.waitText) + '»' : ''}`
+    const st = S.boss.status === 'waiting' ? 'Босс ждёт вас в чате' + (wait ? ` · писем ждут «одобряю»: ${wait}` : '')
       : working ? `Офис работает — сотрудников за делом: ${working}` : S.boss.status === 'running' ? 'Офис работает' : !all.length ? '' : 'Тихо — напишите Боссу, что сделать';   // событий нет — говорит плашка над офисом
     set('mo-status', st + (wait && S.boss.status !== 'waiting' ? ` · писем ждут вашего «одобряю»: ${wait}` : ''));
     const el = document.getElementById('mo-status'); if (el) el.classList.toggle('you', S.boss.status === 'waiting');
