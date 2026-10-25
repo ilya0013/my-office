@@ -25,15 +25,21 @@ class Settings(unittest.TestCase):
         self.assertIn(LETTER[3:], text("роли/менеджер.md"))
         self.assertIn(CHECK[3:], text("роли/проверяющий.md"))
 
-    def test_boss_setup_mode(self):
-        boss = text("роли/босс.md")
-        for must in ("## Настройка", "настройка/было/", "проба: да", "верни как было", "Статус: настраивается"):
+    def test_setup_mode(self):
+        boss, doc = text("роли/босс.md"), text("docs/настройка.md")
+        for must in ("## Настройка", "docs/настройка.md", "Статус: настраивается", "Запомнил"):
             self.assertIn(must, boss)
+        for must in ("настройка/было/", "проба: да", "верни как было", "Оставить пример", "Где ищем:"):
+            self.assertIn(must, doc)
 
-    def test_boss_team_mode(self):
-        boss = text("роли/босс.md")
-        for must in ("## Команда", "build_agents.py", "новый чат"):
-            self.assertIn(must, boss)
+    def test_team_mode(self):
+        # подробности «Команды» — в доке, Босс читает их только по просьбе: его роль не раздувается
+        boss, doc = text("роли/босс.md"), text("docs/перестроить-офис.md")
+        self.assertIn("## Команда", boss)
+        self.assertIn("docs/перестроить-офис.md", boss)
+        self.assertLess(len(boss.splitlines()), 240)
+        for must in ("team.py save", "team.py restore", "unittest tests.test_build_agents", "python3", "новый чат"):
+            self.assertIn(must, doc)
 
 
 class ProbeOnScreen(unittest.TestCase):

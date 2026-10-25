@@ -16,8 +16,8 @@
       "Bash(python3 -I -X utf8 scripts/team.py:*)",
       "Bash(python -I -X utf8 scripts/build_agents.py)",
       "Bash(python3 -I -X utf8 scripts/build_agents.py)",
-      "Bash(python -X utf8 -m unittest discover tests)",
-      "Bash(python3 -X utf8 -m unittest discover tests)"
+      "Bash(python -X utf8 -m unittest tests.test_build_agents)",
+      "Bash(python3 -X utf8 -m unittest tests.test_build_agents)"
     ],
     "deny": [
       "Read(**/.env)",
