@@ -17,7 +17,7 @@ if printf '%s' "$json" | grep -Eq '"hook_event_name" *: *"(SubagentStop|Stop)"';
     END { out() }' "$dir"/../лиды/*.md 2>/dev/null)"
   line="$line
 ev({\"hook_event_name\":\"MoFiles\",\"leads\":{$items}}, $(date +%s)000);"
-  # Вкладка «Решения»: шапки компаний и письма целиком — в решения.js, файл переписывается (events.js не растёт)
+  # Вкладка «База»: шапки компаний и письма целиком — в решения.js, файл переписывается (events.js не растёт)
   dec="$(awk '
     function js(s,  o, i, c) { o = ""; for (i = 1; i <= length(s); i++) { c = substr(s, i, 1); o = o (c == "\\" || c == "\"" ? "\\" c : c == "\t" ? " " : c) } return o }
     function val(s) { sub(/^[^:]*:[ \t]*/, "", s); return js(s) }
@@ -26,14 +26,14 @@ ev({\"hook_event_name\":\"MoFiles\",\"leads\":{$items}}, $(date +%s)000);"
     { sub(/\r$/, "") }
     !(n in seen) { next }
     !L && /^---/ { fm++; next }
-    !L && fm == 1 && /^(компания|статус|сайт|почему):/ { key = $0; sub(/:.*/, "", key); if (!((n, key) in f)) f[n, key] = val($0); next }
+    !L && fm == 1 && /^(компания|статус|сайт|почему|город|контакт):/ { key = $0; sub(/:.*/, "", key); if (!((n, key) in f)) f[n, key] = val($0); next }
     L && /^Кому:/ && !((n, "кому") in f) { t = $0; i = index(t, " · Тема:"); f[n, "тема"] = i ? val(substr(t, i)) : ""; f[n, "кому"] = val(i ? substr(t, 1, i - 1) : t); next }
     L && /^Проверка:/ && !((n, "проверка") in f) { f[n, "проверка"] = val($0); next }
     L && /^## / { sec = $0 ~ /^## Письмо/ ? "письмо" : $0 ~ /^## Перевод/ ? "перевод" : ""; next }
     L && sec != "" { f[n, sec] = f[n, sec] js($0) "\\n" }
-    END { split("компания статус сайт почему кому тема проверка письмо перевод", K, " ")
+    END { split("компания статус сайт почему город контакт кому тема проверка письмо перевод", K, " ")
       for (j = 1; j <= k; j++) { n = order[j]; s = ""
-        for (m = 1; m <= 9; m++) if ((n, K[m]) in f) s = s (s == "" ? "" : ",") "\"" K[m] "\":\"" f[n, K[m]] "\""
+        for (m = 1; m <= 11; m++) if ((n, K[m]) in f) s = s (s == "" ? "" : ",") "\"" K[m] "\":\"" f[n, K[m]] "\""
         printf "%s\"%s\":{%s}", (j > 1 ? "," : ""), n, s } }' "$dir"/../лиды/*.md "$dir"/../письма/*.md 2>/dev/null)"
   printf 'dec({%s});\n' "$dec" > "$dir/решения.$$.tmp" && mv -f "$dir/решения.$$.tmp" "$dir/решения.js"
 fi

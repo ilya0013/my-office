@@ -29,9 +29,10 @@ rep('</style>\n</head>', '</style>\n' + adapter + '</head>')
 # 3. видимые надписи
 rep('<h1>Cubicle <small id="co"></small></h1>', '<h1>Мой офис <small id="co"></small></h1>')
 rep('<span><a href="https://github.com/caglarutkuguler/cubicle" target="_blank" rel="noopener">Cubicle</a> · MIT</span>', '<span>Мой офис</span>')
-# раскладка: широкое окно — офис слева, тексты справа; узкое — друг под другом
+# раскладка: две вкладки в одном окне — «Офис» (пиксельный офис) и «База» (все компании таблицей)
 rep('''  <div id="main">
-  <div id="stage">''', '''  <div id="mo-layout">
+  <div id="stage">''', '''  <nav id="mo-view"><button type="button" data-view="office">Офис</button><button type="button" data-view="base">База<span id="mo-base-n"></span></button><span id="mo-status"></span></nav>
+  <div id="mo-layout">
   <div id="mo-left">
   <div id="main">
   <div id="stage">''')
@@ -39,10 +40,9 @@ rep('''  <div id="cards"></div>
   </div>
 ''', '''  </div>
   </div>
-  <section id="mo">
-    <nav id="mo-tabs"><button type="button" data-tab="now">Сейчас от вас<span id="mo-now-n"></span></button><button type="button" data-tab="board">Компании<span id="mo-board-n"></span></button></nav>
-    <div class="mo-p" id="mo-now" data-pane="now"><h3>Сейчас от вас нужно</h3><ul id="mo-wait"></ul></div>
-    <div class="mo-p" id="mo-board-box" data-pane="board"><h3>Компании</h3><div id="mo-board"></div><div id="mo-rest"></div></div>
+  <section id="mo" class="mo-p">
+    <div class="mo-base-head"><span id="mo-base-sum"></span><button type="button" class="mo-btn" id="mo-csv">Скачать для Excel</button></div>
+    <div id="mo-base-table"></div>
     <div id="cards"></div>
   </section>
   </div>
@@ -76,25 +76,20 @@ rep("const bubMax = Math.max(80, Math.floor(3.3 * T * k - 6)) + 'px';", "const b
 rep("const deskCount = Math.max(4, Math.min(DESKS.length, Math.ceil((sprites.size + (hum ? 1 : 0)) / 4) * 4));",
     "const deskCount = Math.max(6, Math.min(DESKS.length, Math.ceil((sprites.size + (hum ? 1 : 0)) / 3) * 3));")
 rep("  resizeCanvas();\n  loadCatalog().then(applySettings).then(applyView);", "  layoutFor(0, true);\n  loadCatalog().then(applySettings).then(applyView);")
-# офис сам подгоняет размер: широко — до 60 % ширины и во всю высоту окна; узко — не выше 55 % окна
+# офис сам подгоняет размер: во всю ширину окна, но не выше окна (под ним ничего нет — «База» отдельной вкладкой)
 s0 = h.index('  function fitLayout() {'); s1 = h.index("  window.addEventListener('resize', () => fitLayout());")
 h = h[:s0] + '''  function fitLayout() {
     if (!mainEl) return;
     const b = document.body;
     b.classList.remove('side');
-    const wide = window.innerWidth >= 1100;
-    b.classList.toggle('mo-wide', wide);
     if (window.MO) window.MO.place();
     if (KIOSK || !animOn()) { b.classList.remove('fit'); return; }
     b.classList.add('fit');
-    // Одна сетка: офис во всю ширину своей колонки (холст с целым внутренним масштабом растянут CSS,
-    // pixelated). Упёрлись в высоту — сужаем всю сетку, чтобы края офиса и блоков под ним совпадали.
+    // холст с целым внутренним масштабом растянут CSS (pixelated)
     const wrap = document.querySelector('.wrap'), pad = 32;
-    const maxH = wide ? window.innerHeight - 90 : Math.max(180, window.innerHeight * 0.55);   // 90 — шапка и поля
-    const page = window.innerWidth - pad;
-    const officeW = Math.min(wide ? page * 0.6 : page, (maxH - 4) * CW / CH + 4);
-    b.style.setProperty('--mo-office-w', Math.floor(officeW) + 'px');
-    if (wrap) wrap.style.maxWidth = wide ? 'none' : Math.floor(officeW + pad) + 'px';
+    const maxH = Math.max(180, window.innerHeight - 130);   // 130 — шапка и вкладки
+    const officeW = Math.min(window.innerWidth - pad, (maxH - 4) * CW / CH + 4);
+    if (wrap) wrap.style.maxWidth = 'none';
     mainEl.style.setProperty('--stage-w', '100%');
     mainEl.style.setProperty('--stage-h', Math.floor((officeW - 4) * CH / CW + 4) + 'px');
     try { clampCam(); } catch (_) {}

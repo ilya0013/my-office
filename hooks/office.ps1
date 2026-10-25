@@ -16,14 +16,14 @@ if ($json -match '"hook_event_name"\s*:\s*"(SubagentStop|Stop)"') {
   }
   $snap = [ordered]@{ hook_event_name = 'MoFiles'; leads = $leads } | ConvertTo-Json -Compress -Depth 4
   $line += "ev($snap, $([DateTimeOffset]::Now.ToUnixTimeMilliseconds()));`n"
-  # Вкладка «Решения»: шапки компаний и письма целиком — в решения.js, файл переписывается (events.js не растёт)
+  # Вкладка «База»: шапки компаний и письма целиком — в решения.js, файл переписывается (events.js не растёт)
   $dec = [ordered]@{}
   foreach ($f in Get-ChildItem (Join-Path $root 'лиды') -Filter *.md -ErrorAction SilentlyContinue) {
     if ($f.BaseName.StartsWith('_')) { continue }
     $d = [ordered]@{}; $fm = 0
     foreach ($l in [IO.File]::ReadAllLines($f.FullName, [Text.UTF8Encoding]::new($false))) {
       if ($l -match '^---') { if (++$fm -gt 1) { break }; continue }
-      if ($fm -eq 1 -and $l -match '^(компания|статус|сайт|почему):\s*(.*)$' -and -not $d.Contains($Matches[1])) { $d[$Matches[1]] = $Matches[2].Trim() }
+      if ($fm -eq 1 -and $l -match '^(компания|статус|сайт|почему|город|контакт):\s*(.*)$' -and -not $d.Contains($Matches[1])) { $d[$Matches[1]] = $Matches[2].Trim() }
     }
     $p = Join-Path $root "письма\$($f.Name)"
     if (Test-Path $p) {
