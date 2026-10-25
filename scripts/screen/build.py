@@ -29,7 +29,7 @@ rep('</style>\n</head>', '</style>\n' + adapter + '</head>')
 # 3. видимые надписи
 rep('<h1>Cubicle <small id="co"></small></h1>', '<h1>Мой офис <small id="co"></small></h1>')
 rep('<span><a href="https://github.com/caglarutkuguler/cubicle" target="_blank" rel="noopener">Cubicle</a> · MIT</span>', '<span>Мой офис</span>')
-# раскладка: одна колонка при любой ширине — офис, «Сейчас от вас нужно», доска компаний, команда
+# раскладка: широкое окно — офис слева, тексты справа; узкое — друг под другом
 rep('''  <div id="main">
   <div id="stage">''', '''  <div id="mo-layout">
   <div id="mo-left">
@@ -75,23 +75,25 @@ rep("const bubMax = Math.max(80, Math.floor(3.3 * T * k - 6)) + 'px';", "const b
 rep("const deskCount = Math.max(4, Math.min(DESKS.length, Math.ceil((sprites.size + (hum ? 1 : 0)) / 4) * 4));",
     "const deskCount = Math.max(6, Math.min(DESKS.length, Math.ceil((sprites.size + (hum ? 1 : 0)) / 3) * 3));")
 rep("  resizeCanvas();\n  loadCatalog().then(applySettings).then(applyView);", "  layoutFor(0, true);\n  loadCatalog().then(applySettings).then(applyView);")
-# офис сам подгоняет размер: целый масштаб, не выше 55 % окна — под ним видно «Сейчас от вас нужно» и доску
+# офис сам подгоняет размер: широко — до 60 % ширины и во всю высоту окна; узко — не выше 55 % окна
 s0 = h.index('  function fitLayout() {'); s1 = h.index("  window.addEventListener('resize', () => fitLayout());")
 h = h[:s0] + '''  function fitLayout() {
     if (!mainEl) return;
     const b = document.body;
     b.classList.remove('side');
+    const wide = window.innerWidth >= 1100;
+    b.classList.toggle('mo-wide', wide);
     if (window.MO) window.MO.place();
     if (KIOSK || !animOn()) { b.classList.remove('fit'); return; }
     b.classList.add('fit');
     // Одна сетка: офис во всю ширину своей колонки (холст с целым внутренним масштабом растянут CSS,
     // pixelated). Упёрлись в высоту — сужаем всю сетку, чтобы края офиса и блоков под ним совпадали.
     const wrap = document.querySelector('.wrap'), pad = 32;
-    const maxH = Math.max(180, window.innerHeight * 0.55);
-    let page = window.innerWidth - pad;  // без потолка: сколько позволяет окно, столько и видно
-    const officeW = Math.min(page, (maxH - 4) * CW / CH + 4);
-    page = Math.floor(officeW);
-    if (wrap) wrap.style.maxWidth = (page + pad) + 'px';
+    const maxH = wide ? window.innerHeight - 90 : Math.max(180, window.innerHeight * 0.55);   // 90 — шапка и поля
+    const page = window.innerWidth - pad;
+    const officeW = Math.min(wide ? page * 0.6 : page, (maxH - 4) * CW / CH + 4);
+    b.style.setProperty('--mo-office-w', Math.floor(officeW) + 'px');
+    if (wrap) wrap.style.maxWidth = wide ? 'none' : Math.floor(officeW + pad) + 'px';
     mainEl.style.setProperty('--stage-w', '100%');
     mainEl.style.setProperty('--stage-h', Math.floor((officeW - 4) * CH / CW + 4) + 'px');
     try { clampCam(); } catch (_) {}

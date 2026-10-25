@@ -313,10 +313,14 @@
   footer { color:var(--muted); font-size:12px; margin-top:12px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
 </style>
 <style>
-  /* Мой офис: одна колонка при любой ширине — экран обычно открыт во встроенном браузере рядом с чатом.
-     Сверху вниз: офис (кто что делает) → «Сейчас от вас нужно» → доска компаний по стадиям → команда */
+  /* Мой офис. Широкое окно (≥1100 px): слева офис — стоит на месте при прокрутке, справа «Сейчас от вас
+     нужно», доска компаний и команда. Узкое (встроенный браузер рядом с чатом): всё друг под другом */
   body:not(.kiosk) #stage { width:min(100%, calc((100vh - var(--mo-reserve, 150px)) * 352 / 208)); margin:0 auto; }
+  body.mo-wide:not(.kiosk) #stage { --mo-reserve: 90px; }
+  body.mo-wide #mo-layout { display:grid; grid-template-columns:minmax(0, var(--mo-office-w, 60%)) minmax(360px, 1fr); gap:12px; align-items:start; }
+  body.mo-wide #mo-left { position:sticky; top:8px; }
   #mo { display:flex; flex-direction:column; gap:8px; margin-top:8px; min-width:0; }
+  body.mo-wide #mo { margin-top:0; }
   .mo-p { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:7px 10px; min-width:0; }
   .mo-p h3 { margin:0 0 5px; font-size:11.5px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; }
   #mo ul { list-style:none; margin:0; padding:0; font-size:13.5px; }
@@ -336,6 +340,10 @@
   .mo-col.you .mo-card { border-color:#8a7020; }
   .mo-card .mute { font-size:12px; }
   .mo-card .by { font-size:12px; color:#9ec5ff; }
+  .mo-card .files { font-size:12px; color:var(--muted); }
+  .mo-how { font-size:12.5px; color:var(--muted); margin-top:4px; line-height:1.45; }
+  .mo-how b { color:var(--text); font-weight:600; }
+  #mo-now .hint { font-size:12px; color:var(--muted); padding-top:6px; }
   .mo-card details summary { cursor:pointer; color:var(--link); font-size:12.5px; margin-top:3px; }
   .mo-letter { white-space:pre-wrap; background:#1d2033; border-radius:6px; padding:6px 8px; margin-top:4px; font-size:12.5px; line-height:1.4; }
   .mo-letter.tr { color:#c9cbe0; }
@@ -352,7 +360,7 @@
   .mo-tr .mo-task { min-width:0; flex:0 1 auto; overflow:hidden; text-overflow:ellipsis; }
   .mo-tr .mo-step { min-width:0; flex:1 1 0; overflow:hidden; text-overflow:ellipsis; color:var(--muted); }
   #cards .steps { margin:1px 0 0 16px; font-size:12px; }
-  /* кнопки-фразы: клик копирует текст для чата с Боссом */
+  /* фраза для чата: экран с чатом не связан — щелчок только копирует её, отвечает человек сам */
   .mo-say { background:#2b2f47; color:var(--text); border:1px solid #4a4f6b; border-radius:12px; padding:2px 10px; margin:3px 4px 1px 0; font:inherit; font-size:12.5px; cursor:pointer; }
   .mo-say:hover { border-color:var(--link); }
   .mo-say.pri { background:#4a3d12; border-color:#8a7020; color:#ffe08a; font-weight:600; }
@@ -702,15 +710,19 @@
   const busyWith = (slug) => S.slots.find((a) => a.status === 'running' && String(a.task || '').toLowerCase().includes(slug.toLowerCase()));
   function card(slug, l, stage) {
     const d = info(slug), w = busyWith(slug);
-    let h = `<div class="mo-card"><b>${leadA(slug, l.title)}</b>`
+    const files = PLAY ? '' : [S.written.has(`лиды/${slug}.md`) && fileA(`лиды/${slug}.md`, 'досье'), S.written.has(`письма/${slug}.md`) && fileA(`письма/${slug}.md`, 'письмо')].filter(Boolean).join(' · ');
+    let h = `<div class="mo-card"><b>${esc(l.title)}</b>${files ? ` <span class="files">· ${files}</span>` : ''}`
       + (d['почему'] ? `<div class="mute">${esc(short(d['почему'], 120))}</div>` : '')
       + (w ? `<div class="by">✍ ${esc(w.name)} работает над ней</div>` : '');
-    if (stage === 2) h += (d['письмо'] ? `<details data-open="${esc(slug)}"${opened[slug] ? ' open' : ''}><summary>прочитать письмо</summary>`
-        + `<div class="mo-letter">${md(d['письмо'])}</div>${d['перевод'] ? `<div class="mo-letter tr">${md(d['перевод'])}</div>` : ''}</details>` : '')
-      + `<div class="mo-sub">${say('одобряю ' + slug, 'pri')}${say('поправь ' + slug + ': ')}</div>`;
+    if (stage === 2) h += (d['письмо'] ? `<details data-open="${esc(slug)}"${opened[slug] ? ' open' : ''}><summary>прочитать письмо и перевод</summary>`
+        + `<div class="mo-letter">${md(d['письмо'])}</div>${d['перевод'] ? `<div class="mo-letter tr">${md(d['перевод'])}</div>` : ''}</details>`
+        : PLAY ? '<div class="mute">В демо писем нет — в вашем офисе здесь откроется письмо с переводом.</div>' : '')
+      + `<div class="mo-how">Напишите Боссу в чате:<br>${say('одобряю ' + slug)} — письмо перейдёт в «Отправьте сами»;<br>`
+      + `${say('поправь ' + slug + ': что изменить')} — Менеджер перепишет, Проверяющий проверит, письмо вернётся сюда.</div>`;
     if (stage === 3) {
       const mail = mailOf(d);
-      h += `<div class="mo-sub">${mail ? `<a class="mo-say pri" href="${esc(`mailto:${mail}?subject=${encodeURIComponent(d['тема'] || '')}&body=${encodeURIComponent(plain(d['письмо']))}`)}">✉ открыть в почте</a>` : ''}${say('отправил ' + slug)}</div>`;
+      h += (mail ? `<div class="mo-sub"><a class="mo-say pri" href="${esc(`mailto:${mail}?subject=${encodeURIComponent(d['тема'] || '')}&body=${encodeURIComponent(plain(d['письмо']))}`)}">✉ открыть в своей почте</a></div>` : '')
+        + `<div class="mo-how">Отправили — напишите Боссу ${say('отправил ' + slug)}, карточка уйдёт в «Отправлены».</div>`;
     }
     return h + '</div>';
   }
@@ -731,13 +743,14 @@
     // «Сейчас от вас нужно» — одно-два действия с готовой фразой; ничего не нужно — так и пишем
     const mgr = S.slots.some((a) => a.role === 'manager' && a.status === 'running');
     const found = of(['новый']), wait = of(['проверено']), ok = of(['одобрено']), need = [];
-    if (S.boss.status === 'waiting' && found.length && !mgr) need.push(`<li>Найдено компаний: ${found.length} — посмотрите колонку «Найдены» и скажите Боссу, писать ли им.`
-      + `<div class="mo-sub">${say('запускай все', 'pri')}${say('убери …')}</div></li>`);
-    if (wait.length) need.push(`<li>Писем ждут вашего «одобряю»: ${wait.length}. Откройте письмо на карточке и нажмите «одобряю».`
-      + (wait.length > 1 ? `<div class="mo-sub">${say('одобряю все', 'pri')}</div>` : '') + '</li>');
-    if (ok.length) need.push(`<li>Одобрено писем: ${ok.length}. Отправьте их со своей почты кнопкой «✉ открыть в почте» и нажмите «отправил».</li>`);
+    if (S.boss.status === 'waiting' && found.length && !mgr) need.push(`<li>Разведчик нашёл компаний: ${found.length}. Посмотрите колонку «Найдены» и напишите Боссу в чате `
+      + `${say('запускай все', 'pri')} — Менеджеры начнут писать письма. Кто-то лишний — ${say('убери имя')}.</li>`);
+    if (wait.length) need.push(`<li>Писем ждут вашего решения: ${wait.length}. Прочитайте письмо на карточке и напишите Боссу в чате «одобряю имя»`
+      + (wait.length > 1 ? ` или ${say('одобряю все', 'pri')}` : '') + '. Что будет после ответа — написано на карточке.</li>');
+    if (ok.length) need.push(`<li>Одобрено писем: ${ok.length}. Отправьте их со своей почты — кнопка «✉ открыть в своей почте» на карточке.</li>`);
     if (!need.length && S.boss.status === 'waiting') need.push(`<li>Босс ответил в чате и ждёт вас${S.waitText ? ': «' + esc(S.waitText) + '»' : ''}</li>`);
     document.getElementById('mo-now').classList.toggle('you', need.length > 0);
+    if (need.length) need.push('<li class="hint">Экран только показывает — отвечаете вы Боссу в чате. Фразу в рамке можно скопировать щелчком.</li>');
     set('mo-wait', need.join('') || `<li class="mute">${missing && !all.length ? 'Жду первого события — напишите Боссу в чате.' : 'Ничего — команда работает, можно просто смотреть.'}</li>`);
   }
 
@@ -758,7 +771,7 @@
   const plain = (s) => String(s || '').trim().replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)');
   document.addEventListener('toggle', (e) => { const o = e.target.dataset && e.target.dataset.open; if (o) opened[o] = e.target.open; }, true);
 
-  const say = (text, cls = '') => `<button type="button" class="mo-say ${cls}" data-say="${esc(text)}">${esc(text)}</button>`;
+  const say = (text, cls = '') => `<button type="button" class="mo-say ${cls}" data-say="${esc(text)}" title="скопировать для чата">«${esc(text)}»</button>`;
   function copyText(text) {
     const fallback = () => {
       const t = document.createElement('textarea'); t.value = text; t.setAttribute('readonly', ''); t.style.position = 'fixed'; t.style.opacity = '0';
@@ -2617,17 +2630,19 @@
     if (!mainEl) return;
     const b = document.body;
     b.classList.remove('side');
+    const wide = window.innerWidth >= 1100;
+    b.classList.toggle('mo-wide', wide);
     if (window.MO) window.MO.place();
     if (KIOSK || !animOn()) { b.classList.remove('fit'); return; }
     b.classList.add('fit');
     // Одна сетка: офис во всю ширину своей колонки (холст с целым внутренним масштабом растянут CSS,
     // pixelated). Упёрлись в высоту — сужаем всю сетку, чтобы края офиса и блоков под ним совпадали.
     const wrap = document.querySelector('.wrap'), pad = 32;
-    const maxH = Math.max(180, window.innerHeight * 0.55);
-    let page = window.innerWidth - pad;  // без потолка: сколько позволяет окно, столько и видно
-    const officeW = Math.min(page, (maxH - 4) * CW / CH + 4);
-    page = Math.floor(officeW);
-    if (wrap) wrap.style.maxWidth = (page + pad) + 'px';
+    const maxH = wide ? window.innerHeight - 90 : Math.max(180, window.innerHeight * 0.55);   // 90 — шапка и поля
+    const page = window.innerWidth - pad;
+    const officeW = Math.min(wide ? page * 0.6 : page, (maxH - 4) * CW / CH + 4);
+    b.style.setProperty('--mo-office-w', Math.floor(officeW) + 'px');
+    if (wrap) wrap.style.maxWidth = wide ? 'none' : Math.floor(officeW + pad) + 'px';
     mainEl.style.setProperty('--stage-w', '100%');
     mainEl.style.setProperty('--stage-h', Math.floor((officeW - 4) * CH / CW + 4) + 'px');
     try { clampCam(); } catch (_) {}
