@@ -105,7 +105,11 @@ rep('''  };
   const params = new URLSearchParams(location.search);''', '''  };
 ''' + ru + '''  const params = new URLSearchParams(location.search);''')
 rep("(params.get('lang') || savedLang || navigator.language || 'en')", "(params.get('lang') || savedLang || 'ru')")
-rep("const LANG_NAMES = { en: 'English',", "const LANG_NAMES = { ru: 'Русский', en: 'English',")
+rep("const LANG_NAMES = { en: 'English', tr: 'Türkçe', de: 'Deutsch', es: 'Español', fr: 'Français', zh: '中文', ar: 'العربية' };",
+    "const LANG_NAMES = { ru: 'Русский', en: 'English' };")
+# только русский и запасной английский: встроенный браузер Claude Code открывает файлы до 512 КБ
+s0 = h.index('    tr: {'); s1 = h.index('  };\n', s0)
+h = h[:s0] + h[s1:]
 rep("const SPEECH_LANG = { en: 'en-US',", "const SPEECH_LANG = { ru: 'ru-RU', en: 'en-US',")
 rep("id: 'pixel', name: { en: 'Pixel (classic)',", "id: 'pixel', name: { ru: 'Пиксели (классика)', en: 'Pixel (classic)',")
 # 5. лента: текущий шаг для пузыря, моменты выдачи и сдачи работы
