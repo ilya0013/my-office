@@ -23,7 +23,7 @@ if ($json -match '"hook_event_name"\s*:\s*"(SubagentStop|Stop)"') {
     $d = [ordered]@{}; $fm = 0
     foreach ($l in [IO.File]::ReadAllLines($f.FullName, [Text.UTF8Encoding]::new($false))) {
       if ($l -match '^---') { if (++$fm -gt 1) { break }; continue }
-      if ($fm -eq 1 -and $l -match '^(компания|статус|сайт|почему|город|контакт):\s*(.*)$' -and -not $d.Contains($Matches[1])) { $d[$Matches[1]] = $Matches[2].Trim() }
+      if ($fm -eq 1 -and $l -match '^(компания|статус|сайт|почему|город|контакт|проба):\s*(.*)$' -and -not $d.Contains($Matches[1])) { $d[$Matches[1]] = $Matches[2].Trim() }
     }
     $p = Join-Path $root "письма\$($f.Name)"
     if (Test-Path $p) {

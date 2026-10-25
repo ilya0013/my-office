@@ -15,7 +15,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 CLAUDE = shutil.which("claude")
 TOOLS = ["WebSearch", "WebFetch", "Read", "Write", "Edit", "Glob", "Grep", "Agent", "Task"]
-SKIP = {".git", "лиды", "письма", "ответы", "входящие.md", "events.js", "испытание.md", "моя-задача.md"}
+SKIP = {".git", "лиды", "письма", "ответы", "настройка", "входящие.md", "events.js", "испытание.md", "моя-задача.md"}
 
 OFFICE = "Знакомство пропусти. Работаем по каталогу. Найди {n}. Сразу письма, без остановки на списке, ничего не спрашивай."
 CHAT = ("В каталог.md — кто мы, зачем работаем и что предлагаем. Сделай ту же работу одним чатом "

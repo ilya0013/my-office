@@ -12,7 +12,7 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-REPO_ONLY = ("docs/сценарий-2ч.md", "docs/лаба.md", "scripts/release.py", "scripts/screen/")  # для ведущего и сборки
+REPO_ONLY = ("docs/сценарий-2ч.md", "docs/лаба.md", "docs/v0.3-мастер-настройки.md", "scripts/release.py", "scripts/screen/")  # для ведущего и сборки
 NO_SCAN = ("scripts/screen/cubicle-0.38.1.html", "scripts/release.py")  # оригинал Cubicle; сам список проверок
 PERSONAL = [Path.home().name, "C:\\Users", "C:/Users"]  # следы машины, где собирают выпуск
 MUST = ["README.md", "INSTALL.md", "LICENSE", "CLAUDE.md", "AGENTS.md", "ПРАВИЛА.md", "каталог.md",
