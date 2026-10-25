@@ -61,18 +61,19 @@
   const SRC = /^[\w.-]+\.js$/.test(q.get('src') || '') ? q.get('src') : 'events.js';
   const PLAY = /^demo/i.test(SRC) || q.has('play');
   const STEP_MS = Math.max(100, Number(q.get('step')) || 1300);
-  const BASE_COLUMNS = ['новый', 'разобран', 'не подходит', 'письмо готово', 'одобрено', 'отправлено', 'ответ', 'встреча', 'отказ'];
+  const BASE_COLUMNS = ['запас', 'новый', 'не подходит', 'письмо готово', 'проверено', 'одобрено', 'отправлено', 'ответ', 'встреча', 'отказ'];
   // колонки конвейера: известные статусы и встреченные в файлах новые (перед «одобрено»)
   const cols = () => { const k = BASE_COLUMNS.indexOf('одобрено'); return [...BASE_COLUMNS.slice(0, k), ...S.extra, ...BASE_COLUMNS.slice(k)]; };
-  const NAMES = { boss: 'Босс', scout: 'Разведчик', auditor: 'Аудитор', manager: 'Менеджер', worker: 'Сотрудник' };
-  const TITLES = { boss: 'руководитель', scout: 'ищет компании', auditor: 'разбирает компании', manager: 'пишет письма', worker: 'помощник' };
-  const COLORS = { 'Вы': '#ffffff', 'Босс': '#ffd75e', 'Разведчик': '#6fcf97', 'Аудитор': '#9ec5ff', 'Менеджер': '#f0a35e', 'Сотрудник': '#c9cbe0' };
+  const NAMES = { boss: 'Босс', scout: 'Разведчик', manager: 'Менеджер', checker: 'Проверяющий', worker: 'Сотрудник' };
+  const TITLES = { boss: 'руководитель', scout: 'ищет кандидатов', manager: 'ведёт компанию', checker: 'проверяет письма', worker: 'помощник' };
+  const COLORS = { 'Вы': '#ffffff', 'Босс': '#ffd75e', 'Разведчик': '#6fcf97', 'Проверяющий': '#9ec5ff', 'Менеджер': '#f0a35e', 'Сотрудник': '#c9cbe0' };
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const short = (s, n = 60) => { s = String(s || '').replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
   const baseName = (n) => String(n || '').replace(/ \d+$/, '');
 
   let buf = [];
-  window.ev = (e) => { if (e && typeof e === 'object') buf.push(e); };
+  // ev({...}, мс): второй аргумент — время записи события хуком (в старых строках его нет — тогда время чтения)
+  window.ev = (e, t) => { if (e && typeof e === 'object') { if (Number.isFinite(t) && t > 0) e.__t = t; buf.push(e); } };
 
   let S, all = [], applied = 0, zeroReads = 0, t0 = 0, missing = false;
   function mk(id, role, name, since) {
@@ -89,7 +90,7 @@
   function roleOf(t, guess) {
     t = String(t || '').toLowerCase().trim();
     if (/scout|развед/.test(t)) return 'scout';
-    if (/audit|аудит/.test(t)) return 'auditor';
+    if (/check|провер/.test(t)) return 'checker';
     if (/manag|менедж/.test(t)) return 'manager';
     const k = t.replace(/[^\wа-яё-]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 24);
     return guess || !k ? 'worker' : 'w-' + k;
@@ -108,6 +109,8 @@
   function host(u) { try { return new URL(u).host.replace(/^www\./, ''); } catch (_) { return short(u, 30); } }
   function describe(e) {
     const n = String(e.tool_name || '').toLowerCase(), i = e.tool_input || {};
+    // Codex: webrun — поиск (search_query[].q) или открытие найденных страниц (open[])
+    if (n === 'webrun') return i.search_query && i.search_query.length ? '🔎 поиск: ' + short(i.search_query[0].q, 50) : '🌐 открывает страницы';
     if (/websearch|web_search|search_query/.test(n)) return '🔎 поиск: ' + short(i.query || i.q || (i.search_query && i.search_query[0] && i.search_query[0].q), 50);
     if (/webfetch|web_fetch|fetch|open_url/.test(n)) return '🌐 открыл сайт: ' + host(i.url || i.ref_id || '');
     if (/^(write|create|write_file)$/.test(n) || /^(edit|multiedit|str_replace|replace)$/.test(n)) return '✍ пишет ' + short(rel(i.file_path || i.path, e.cwd), 60);
@@ -141,7 +144,17 @@
     if (/^(edit|str_replace|replace)$/.test(n)) return [{ path, text: String(i.new_string || i.new_str || '') }];
     if (n === 'multiedit') return [{ path, text: (i.edits || []).map((x) => x.new_string || '').join('\n') }];
     const p = patchText(e);
-    return p ? patchFiles(p) : [];
+    if (p) return patchFiles(p);
+    // Codex: сотрудник иногда меняет файл командой (python/PowerShell replace + запись). Берём, только если в
+    // команде один файл лиды/<имя>.md, есть запись в файл и «статус: X» — последний из них новый.
+    if (/bash|shell|exec|command/.test(n)) {
+      const cmd = [].concat(i.command || i.cmd || '').join(' ');
+      const files = [...new Set([...cmd.matchAll(/лиды[\\/]+([^\\/'"`\s]+?)\.md/g)].map((m) => m[1]))].filter((f) => !f.startsWith('_'));
+      const writes = /write_text|Set-Content|Add-Content|Out-File|WriteAllText|sed\s+-i|>\s*['"]?лиды/i.test(cmd);
+      const st = [...cmd.matchAll(/статус:\s*([^'"`\r\n\\|]+?)\s*(?=['"`\r\n\\])/g)];
+      if (files.length === 1 && writes && st.length) return [{ path: `лиды/${files[0]}.md`, text: 'статус: ' + st[st.length - 1][1] }];
+    }
+    return [];
   }
   function trackLeads(e, who, at) {
     for (const w of leadWrites(e)) {
@@ -187,7 +200,8 @@
       a.parent = 'boss';
       S.slots.push(a);
     }
-    a.status = 'running'; a.task = job ? job.desc : ''; a.recent = []; a.assignedAt = at; a.step = '';
+    const own = e.description ? short(e.description, 70).replace(new RegExp('^' + nameOf(role).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*:\\s*', 'i'), '') : '';
+    a.status = 'running'; a.task = own || (job ? job.desc : ''); a.recent = []; a.assignedAt = at; a.step = '';
     step(a, '📥 получил задание', at);
     if (e.agent_id) S.byAgent.set(e.agent_id, a);
     if (e.session_id && S.bossSession && e.session_id !== S.bossSession) S.bySession.set(e.session_id, a);
@@ -221,7 +235,13 @@
     const kind = e.hook_event_name || e.event || e.type || '';
     if (kind === 'SubagentStart') {
       const known = e.agent_id && S.byAgent.get(e.agent_id);
-      if (!known) startSlot(e, at);
+      if (known && known.status !== 'running') S.byAgent.delete(e.agent_id);   // тот же id получил новое задание
+      const a = known && known.status === 'running' ? known : startSlot(e, at);
+      if (e.source === 'agent') {
+        // Codex: Босс сам пишет, кого отправил, — значит, он за столом и раздаёт работу
+        S.boss.status = 'running'; S.waitText = '';
+        step(S.boss, '📨 → ' + baseName(a.name), at);
+      }
       return;
     }
     const who = actor(e, kind), B = S.boss;
@@ -229,7 +249,8 @@
     if (kind === 'Stop') {
       if (who !== B) { stopSlot(who, e, at); return; }
       B.completedAt = at;
-      const bg = (e.background_tasks || []).some((t) => t && t.status === 'running') || runningSubs() > 0;
+      // source:"agent" — Босс сам сообщил, что ждёт владельца
+      const bg = e.source !== 'agent' && ((e.background_tasks || []).some((t) => t && t.status === 'running') || runningSubs() > 0);
       if (bg) { B.status = 'running'; step(B, '⏳ ждёт сотрудников', at); }   // сидит за столом и ждёт отчётов
       else {
         B.status = 'waiting';
@@ -241,7 +262,13 @@
     }
     if (kind === 'UserPromptSubmit') {
       if (who !== B) return;
-      const p = String(e.prompt || '');
+      // Codex-приложение оборачивает сообщение: <in-app-browser-context …>…</…> и «## My request:» — берём сам текст
+      let p = String(e.prompt || '');
+      if (!/^\s*<task-notification>/.test(p)) {
+        p = p.replace(/<([\w-]+)[^>]*>[\s\S]*?<\/\1>/g, '');
+        const m = p.match(/##\s*My request:\s*([\s\S]*)$/i);
+        p = (m ? m[1] : p).trim();
+      }
       B.status = 'running'; S.waitText = '';
       if (/^\s*<task-notification>/.test(p)) step(B, '📬 читает отчёт', at);
       else { B.task = short(p, 80); step(B, '💬 задание от вас', at); flow(at, 'Вы', 'Босс', short(p, 90)); }
@@ -255,7 +282,9 @@
     if (/^(agent|task)$/.test(n) || /spawn_agent/.test(n)) {
       const t0 = i.subagent_type || i.agent_type || i.role;
       const role = t0 ? roleOf(t0) : roleOf(i.description, true);
-      let desc = short(i.description || i.message || i.prompt || i.task || '', 70);
+      // Codex: message зашифрован (без пробелов) — не показываем; задание тогда из task_name: scout_first → «scout first»
+      const msg = typeof i.message === 'string' && /\s/.test(i.message) ? i.message : '';
+      let desc = short(i.description || (i.task_name ? String(i.task_name).replace(/_+/g, ' ') : '') || msg || i.prompt || i.task || '', 70);
       desc = desc.replace(new RegExp('^' + nameOf(role).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*:\\s*', 'i'), '');
       S.pending.push({ role, desc });
     }
@@ -303,7 +332,16 @@
     }
     if (all.length && !t0) t0 = Date.now();
     const limit = PLAY ? Math.min(all.length, Math.floor((Date.now() - t0) / STEP_MS) + 1) : all.length;
-    while (applied < limit) { try { apply(all[applied].e, Date.now()); } catch (_) {} applied++; }
+    // Codex: Босс и сотрудники сами дописывают события с source:"agent". Если в файле есть настоящие события
+    // хуков той же сессии (или у агентского события нет сессии), агентские пропускаем — иначе всё вдвойне.
+    const realS = new Set(all.filter((x) => x.e.source !== 'agent').map((x) => x.e.session_id || ''));
+    const dup = (e) => e.source === 'agent' && realS.size > 0 && (!e.session_id || realS.has(e.session_id));
+    if (realS.size && S.agentApplied && all.slice(0, applied).some((x) => dup(x.e))) reset();   // уже показали — пересобрать без них
+    while (applied < limit) {
+      const e = all[applied].e;
+      if (!dup(e)) { try { apply(e, (!PLAY && e.__t) || Date.now()); if (e.source === 'agent') S.agentApplied = true; } catch (_) {} }
+      applied++;
+    }
     render();
     return { company: '', agents: [S.boss, ...S.slots].map(out) };
   }
@@ -383,8 +421,9 @@
     copyText(text).then((ok) => toast(ok ? `«${text}» скопировано — вставьте в чат Боссу` : `Скопируйте вручную: ${text}`));
   });
   // шпаргалка: те же группы, что у Босса; фразы с «…» копируются как есть
-  const HELP = [['Работа', ['найди 3 компании', 'что в работе?', 'пропусти …']], ['Письма', ['покажи письмо …', 'одобряю …', 'отправил …', 'ответ от …: …']],
-    ['Команда', ['найми …', 'кто в команде?', 'измени …: …']], ['Настройки', ['настрой заново', 'помощь']]];
+  const HELP = [['Работа', ['найди 5 компаний', 'что в работе?', 'почему …?', 'пропусти …']],
+    ['Письма', ['покажи письмо …', 'поправь …: …', 'одобряю …', 'одобряю все', 'отправил …', 'ответ от …: …']],
+    ['Настройки', ['настрой заново', 'покажи офис', 'помощь']]];
   function renderHelp() {
     set('mo-help-body', HELP.map(([g, list]) => `<h4>${esc(g)}</h4>` + list.map((x) => say(x)).join('')).join('')
       + '<div class="mute" style="margin-top:6px;font-size:12px">Кнопка копирует фразу — вставьте её в чат Боссу и допишите, где «…».</div>');
