@@ -1,6 +1,6 @@
 # «Мой офис»: Босс — главный чат. Настройки действуют, только если проекту доверяют (trusted).
 model = "gpt-6.1-sol"
-model_reasoning_effort = "low"
+model_reasoning_effort = "medium"
 approval_policy = "on-request"
 approvals_reviewer = "auto_review"
 sandbox_mode = "workspace-write"

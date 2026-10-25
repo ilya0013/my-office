@@ -27,7 +27,8 @@ def main():
         (claude_dir / f"{name}.md").write_text(
             f"---\nname: {name}\ndescription: {meta['description']}\n"
             f"tools: {meta['claude_tools']}\nmodel: {meta['claude_model']}\n"
-            f"omitClaudeMd: true\n---\n\n{body}\n",
+            + (f"effort: {meta['claude_effort']}\n" if "claude_effort" in meta else "")
+            + f"omitClaudeMd: true\n---\n\n{body}\n",
             encoding="utf-8", newline="\n")
         description = meta["description"].replace("\\", "\\\\").replace('"', '\\"')
         (codex_dir / f"{name}.toml").write_text(

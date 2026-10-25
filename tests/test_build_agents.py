@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-WORKERS = ["scout", "auditor", "manager"]
+WORKERS = ["scout", "manager", "checker"]
 
 
 def frontmatter(path):
@@ -24,6 +24,13 @@ class BuildAgents(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         subprocess.run([sys.executable, "-I", str(ROOT / "scripts" / "build_agents.py")], check=True)
+
+    def test_claude_effort(self):
+        roles = [frontmatter(p) for p in (ROOT / "роли").glob("[!_]*.md")
+                 if p.read_text(encoding="utf-8").startswith("---")]
+        for role in roles:
+            meta = frontmatter(ROOT / ".claude" / "agents" / f"{role['name']}.md")
+            self.assertEqual(meta.get("effort"), role.get("claude_effort"))
 
     def test_claude_agents(self):
         for name in WORKERS:
