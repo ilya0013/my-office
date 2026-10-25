@@ -365,6 +365,7 @@
   .mo-say { background:#2b2f47; color:var(--text); border:1px solid #4a4f6b; border-radius:12px; padding:1px 9px; margin:2px 4px 2px 0; font:inherit; font-size:12px; cursor:pointer; }
   .mo-say:hover { border-color:var(--link); }
   .mo-say.pri { background:#4a3d12; border-color:#8a7020; color:#ffe08a; }
+  a.mo-say { display:inline-block; text-decoration:none; }
   .mo-sub { margin-top:2px; }
   #mo-help summary { cursor:pointer; color:var(--muted); font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.6px; }
   #mo-help h4 { margin:6px 0 2px; font-size:12px; color:var(--muted); font-weight:600; }
@@ -795,11 +796,17 @@
         + `<div class="mo-sub">${say('одобряю ' + slug, 'pri')}${say('поправь ' + slug + ': ')}</div></div>`;
     }).join('') + (letters.length > 1 ? `<div class="mo-sub">${say('одобряю все')}</div>` : ''));
     const ok = st('одобрено');
-    if (ok.length) parts.push('<h4>Одобрены — отправьте со своей почты</h4>' + ok.map(([slug, l]) => {
-      const mail = (String(l['кому'] || '').match(/[\w.+-]+@[\w-]+(\.[\w-]+)+/) || [''])[0];
-      return `<div class="mo-card">${name(slug, l)}${mail ? ' — ' + esc(mail) : ''}<div class="mo-sub">`
-        + (mail ? copyB('адрес', mail) : '') + (l['тема'] ? copyB('тема', l['тема']) : '') + (l['письмо'] ? copyB('письмо', plain(l['письмо'])) : '') + '</div></div>';
-    }).join(''));
+    if (ok.length) parts.push('<h4>Одобрены — осталось отправить со своей почты</h4>'
+      + '<div class="mute">«Открыть в почте» создаст письмо с адресом, темой и текстом. Не открылось — создайте новое письмо сами и вставьте по очереди адрес, тему и текст кнопками «скопировать». Отправили — скажите Боссу «отправил …».</div>'
+      + ok.map(([slug, l]) => {
+        const mail = (String(l['кому'] || '').match(/[\w.+-]+@[\w-]+(\.[\w-]+)+/) || [''])[0], body = plain(l['письмо']);
+        const href = mail ? `mailto:${mail}?subject=${encodeURIComponent(l['тема'] || '')}&body=${encodeURIComponent(body)}` : '';
+        return `<div class="mo-card">${name(slug, l)}` + (mail ? `<div>Кому: ${esc(mail)}</div>` : '') + (l['тема'] ? `<div>Тема: ${esc(l['тема'])}</div>` : '')
+          + (body ? `<details data-open="ok-${esc(slug)}"${opened['ok-' + slug] ? ' open' : ''}><summary>читать письмо</summary><div class="mo-letter">${md(l['письмо'])}</div></details>` : '')
+          + `<div class="mo-sub">${href ? `<a class="mo-say pri" href="${esc(href)}">✉ открыть в почте</a>` : ''}`
+          + (mail ? copyB('скопировать адрес', mail) : '') + (l['тема'] ? copyB('скопировать тему', l['тема']) : '') + (body ? copyB('скопировать текст', body) : '') + '</div>'
+          + `<div class="mo-sub">${say('отправил ' + slug)}</div></div>`;
+      }).join(''));
     set('mo-dec', parts.join('') || `<div class="mo-st empty">${D ? 'Сейчас решать нечего — кандидаты и проверенные письма появятся здесь.' : 'Решения появятся, когда команда закончит первый ход.'}</div>`);
   }
   document.addEventListener('change', (e) => { const p = e.target.dataset && e.target.dataset.pick; if (p) { picks[p] = e.target.checked; render(); } });
@@ -822,7 +829,7 @@
   }
   document.addEventListener('click', (e) => {
     const c = e.target.closest && e.target.closest('[data-copy]');
-    if (c) { copyText(c.dataset.copy).then((ok) => toast(ok ? `${c.textContent} скопировано — вставьте в письмо` : 'Не получилось скопировать — откройте файл письма')); return; }
+    if (c) { copyText(c.dataset.copy).then((ok) => toast(ok ? 'Скопировано — вставьте в новое письмо' : 'Не получилось скопировать — откройте файл письма')); return; }
     if (e.target.closest && e.target.closest('[data-take]')) {
       const list = [...document.querySelectorAll('#mo-dec [data-pick]:checked')].map((x) => x.dataset.pick);
       if (!list.length) { toast('Отметьте кандидатов галочками'); return; }
