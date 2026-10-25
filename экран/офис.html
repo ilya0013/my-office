@@ -680,7 +680,8 @@
     'письмо готово': ['письмо на проверке', ''], 'отправлено': ['отправлено', 'good'], 'ответ': ['пришёл ответ', 'good'],
     'встреча': ['встреча', 'good'], 'запас': ['в запасе', 'bad'], 'не подходит': ['не подошла', 'bad'], 'отказ': ['отказ', 'bad'] };
   const ORDER = Object.keys(STAGE);
-  const info = (slug) => (D && D[slug]) || {};
+  // «неизвестно» от Разведчика — пустая клетка: так таблица читается легче
+  const info = (slug) => Object.fromEntries(Object.entries((D && D[slug]) || {}).map(([k, v]) => [k, /^неизвестн/i.test(String(v).trim()) ? '' : v]));
   const mailOf = (d) => (String(d['кому'] || d['контакт'] || '').match(/[\w.+-]+@[\w-]+(\.[\w-]+)+/) || [''])[0];
   const site = (u) => (/^https?:\/\//.test(u || '') ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(String(u).replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, ''))}</a>` : esc(u || ''));
   function rows() {
