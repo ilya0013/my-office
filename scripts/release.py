@@ -21,7 +21,7 @@ MUST = ["README.md", "INSTALL.md", "LICENSE", "CLAUDE.md", "AGENTS.md", "ПРА�
         "экран/LICENSE-cubicle.txt", "лиды/_шаблон.md", "входящие.md",
         # на них ссылаются роли, README и scripts/trial.py
         "docs/перестроить-офис.md", "docs/под-своё-дело.md", "docs/почему-команда.md", "docs/модели.md",
-        "docs/испытание-codex.md", "scripts/trial.py", "tests/test_build_agents.py"]
+        "docs/испытание-codex.md", "docs/отправка-писем.md", "scripts/trial.py", "tests/test_build_agents.py"]
 
 
 def fail(msg):
