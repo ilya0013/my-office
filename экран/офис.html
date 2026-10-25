@@ -1040,7 +1040,7 @@
   // browser), then the browser language; English otherwise.
   const savedLang = (() => { try { return JSON.parse(localStorage.getItem('cubicle.settings') || '{}').lang || ''; } catch (_) { return ''; } })();
   const wantLang = (params.get('lang') || savedLang || 'ru').slice(0, 2).toLowerCase();
-  const lang = STR[wantLang] ? wantLang : 'en';
+  const lang = STR[wantLang] ? wantLang : 'ru';
   const L = STR[lang];
   document.documentElement.lang = lang;
   document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';

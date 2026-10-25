@@ -105,6 +105,7 @@ rep('''  };
   const params = new URLSearchParams(location.search);''', '''  };
 ''' + ru + '''  const params = new URLSearchParams(location.search);''')
 rep("(params.get('lang') || savedLang || navigator.language || 'en')", "(params.get('lang') || savedLang || 'ru')")
+rep("const lang = STR[wantLang] ? wantLang : 'en';", "const lang = STR[wantLang] ? wantLang : 'ru';")   # сохранённый de/fr… — русский
 rep("const LANG_NAMES = { en: 'English', tr: 'Türkçe', de: 'Deutsch', es: 'Español', fr: 'Français', zh: '中文', ar: 'العربية' };",
     "const LANG_NAMES = { ru: 'Русский', en: 'English' };")
 # только русский и запасной английский: встроенный браузер Claude Code открывает файлы до 512 КБ

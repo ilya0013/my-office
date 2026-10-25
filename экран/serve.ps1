@@ -7,7 +7,7 @@ $types = @{ '.html' = 'text/html; charset=utf-8'; '.js' = 'text/javascript; char
   '.css' = 'text/css'; '.png' = 'image/png'; '.json' = 'application/json'; '.txt' = 'text/plain; charset=utf-8' }
 $l = [Net.HttpListener]::new()
 $l.Prefixes.Add("http://localhost:$Port/")
-$l.Start()
+try { $l.Start() } catch { Write-Error "Порт $Port занят — экран другого проекта? Скажите ему «закончили»."; exit 1 }
 while ($true) {
   $task = $l.GetContextAsync()
   if (-not $task.Wait($IdleSeconds * 1000)) { break }   # тишина — экран закрыт
@@ -16,6 +16,7 @@ while ($true) {
   try {
     $rel = [Uri]::UnescapeDataString($c.Request.Url.AbsolutePath).TrimStart('/')
     if (-not $rel) { $r.Redirect('/' + [Uri]::EscapeUriString('экран/офис.html')); continue }
+    if ($rel -match '(^|[\\/])\.') { $r.StatusCode = 404; continue }   # .git, .claude, .env — не отдаём
     $f = [IO.Path]::GetFullPath((Join-Path $root $rel))
     if (-not $f.StartsWith($root, [StringComparison]::OrdinalIgnoreCase) -or -not (Test-Path -LiteralPath $f -PathType Leaf)) { $r.StatusCode = 404; continue }
     $b = [IO.File]::ReadAllBytes($f)
