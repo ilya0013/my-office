@@ -689,7 +689,8 @@
   const FILE_RE = /(^|[\s,(])((?:[\wА-Яа-яЁё.-]+\/)*[\wА-Яа-яЁё-][\wА-Яа-яЁё.-]*\.(?:md|txt|csv|json|html))(?=$|[\s,;)])/g;
   function linkText(text) { return esc(text).replace(FILE_RE, (m, pre, path) => pre + fileA(path, path)); }
   const leadA = (slug, text) => fileA(`лиды/${slug}.md`, esc(text));
-  const letterA = (slug, status) => (cols().indexOf(status) >= 3 && !PLAY && S.written.has(`письма/${slug}.md`) ? ' · ' + fileA(`письма/${slug}.md`, 'письмо') : '');
+  // имя компании — досье; ✉ рядом — её письмо (подсказка в конце конвейера)
+  const letterA = (slug, status) => (cols().indexOf(status) >= 3 && !PLAY && S.written.has(`письма/${slug}.md`) ? ' ' + fileA(`письма/${slug}.md`, '✉').replace('title="откроется текстом"', 'title="открыть письмо"') : '');
   function linkSlugs(html) {
     for (const slug of Object.keys(S.leads)) {
       const re = new RegExp('(^|[\\s:(])(' + slug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')(?=$|[\\s,.;:)])', 'g');
@@ -712,7 +713,8 @@
     set('mo-board', (leads.length ? cols().filter((c) => by(c).length).map((c) => `<div class="mo-st ${COL_CLASS[c] || ''}"><span class="mo-chip">${esc(c)} <b>${by(c).length}</b></span>`
       + by(c).map(([slug, l]) => leadA(slug, l.title) + letterA(slug, c)).join(', ') + '</div>').join('')
       : '<div class="mo-st empty">Компаний пока нет — их найдёт Разведчик.</div>')
-      + (leads.length && empty.length ? `<div class="mo-st empty">пусто: ${esc(empty.join(', '))}</div>` : ''));
+      + (leads.length && empty.length ? `<div class="mo-st empty">пусто: ${esc(empty.join(', '))}</div>` : '')
+      + (leads.length ? '<div class="mo-st empty">Имя компании — её досье, ✉ — письмо.</div>' : ''));
     const file = (slug) => (PLAY ? ' · <span class="mute">в демо файлов нет</span>' : S.written.has(`письма/${slug}.md`) ? ' · ' + fileA(`письма/${slug}.md`, 'открыть файл') : '');
     const wait = by('письмо готово').map(([slug, l]) => `<li>✉ ${leadA(slug, l.title)} — письмо готово<div class="mo-sub">${say('покажи письмо ' + slug, 'pri')}<span class="mute">Босс покажет письмо в чате</span></div>`
       + `<div class="mo-sub">${say('одобряю ' + slug)}${say('перепиши письмо ' + slug + ' короче')}${file(slug)}</div></li>`);
