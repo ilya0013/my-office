@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "экран",
+      "runtimeExecutable": "powershell.exe",
+      "runtimeArgs": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "экран/serve.ps1", "-Port", "8765"],
+      "port": 8765
+    },
+    {
+      "name": "экран-mac",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-I", "-X", "utf8", "экран/serve.py", "8765"],
+      "port": 8765
+    }
+  ]
+}
