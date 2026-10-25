@@ -1,6 +1,7 @@
 """Сборка ролей: из роли/*.md получаются агенты Claude Code и Codex.
 Запуск: python -m unittest discover tests
 """
+import re
 import subprocess
 import sys
 import unittest
@@ -9,6 +10,10 @@ try:
 except ImportError:  # Python 3.9–3.10: на Mac Python от Apple — 3.9
     tomllib = None
 from pathlib import Path
+
+# Ровно то, что пишет build_agents.py: строки key = "..." и в конце developer_instructions = '''...'''.
+# Всё, что не так, — ошибка; поэтому без tomllib проверка не слабее.
+CODEX_TOML = re.compile(r"((?:\w+ = \"(?:[^\"\\\n]|\\[\"\\])*\"\n)+)developer_instructions = '''\n(.*)'''\n", re.S)
 
 ROOT = Path(__file__).resolve().parent.parent
 WORKERS = ["scout", "manager", "checker"]
@@ -20,7 +25,13 @@ def frontmatter(path):
 
 
 def codex(name):
-    return tomllib.loads((ROOT / ".codex" / "agents" / f"{name}.toml").read_text(encoding="utf-8"))
+    text = (ROOT / ".codex" / "agents" / f"{name}.toml").read_text(encoding="utf-8")
+    if tomllib:
+        return tomllib.loads(text)
+    m = CODEX_TOML.fullmatch(text)
+    assert m, f"{name}.toml: не тот формат, Codex его не прочтёт"
+    agent = {k: re.sub(r"\\(.)", r"\1", v) for k, v in re.findall(r'(\w+) = "(.*)"', m[1])}
+    return {**agent, "developer_instructions": m[2]}
 
 
 class BuildAgents(unittest.TestCase):
@@ -42,7 +53,6 @@ class BuildAgents(unittest.TestCase):
             self.assertIn(meta["model"], {"haiku", "sonnet"})
             self.assertNotIn("Bash", meta["tools"])  # отправлять наружу нечем
 
-    @unittest.skipIf(tomllib is None, "агенты Codex не проверены: нужен Python 3.11+")
     def test_codex_agents(self):
         for name in WORKERS:
             agent = codex(name)
@@ -59,7 +69,6 @@ class BuildAgents(unittest.TestCase):
         for f in stale:
             self.assertFalse(f.exists(), f"{f.name}: агент без роли остался")
 
-    @unittest.skipIf(tomllib is None, "агенты Codex не проверены: нужен Python 3.11+")
     def test_same_instructions_in_both(self):
         for name in WORKERS:
             text = (ROOT / ".claude" / "agents" / f"{name}.md").read_text(encoding="utf-8")
