@@ -22,7 +22,7 @@ MUST = ["README.md", "INSTALL.md", "LICENSE", "CLAUDE.md", "AGENTS.md", "ПРА�
         "экран/serve.py", "экран/serve.ps1", ".claude/launch.json",   # экран во встроенном браузере Claude Code
         # на них ссылаются роли, README и scripts/trial.py
         "docs/перестроить-офис.md", "docs/под-своё-дело.md", "docs/почему-команда.md", "docs/модели.md",
-        "docs/испытание-codex.md", "docs/отправка-писем.md", "scripts/trial.py", "tests/test_build_agents.py"]
+        "docs/испытание-codex.md", "docs/отправка-писем.md", "docs/как-устроен-офис.md", "scripts/trial.py", "tests/test_build_agents.py"]
 
 
 def fail(msg):
