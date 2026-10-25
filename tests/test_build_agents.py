@@ -12,7 +12,7 @@ except ImportError:  # Python 3.9–3.10: на Mac Python от Apple — 3.9
 from pathlib import Path
 
 # Ровно то, что пишет build_agents.py: строки key = "..." и в конце developer_instructions = '''...'''.
-# Всё, что не так, — ошибка; поэтому без tomllib проверка не слабее.
+# Всё, что не так, — ошибка. Мягче tomllib только там, что сборка и так не пишет: ''' в теле, повтор ключа.
 CODEX_TOML = re.compile(r"((?:\w+ = \"(?:[^\"\\\n]|\\[\"\\])*\"\n)+)developer_instructions = '''\n(.*)'''\n", re.S)
 
 ROOT = Path(__file__).resolve().parent.parent
