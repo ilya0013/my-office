@@ -24,18 +24,16 @@ def main():
         meta, body = parse(path)
         name = meta["name"]
         assert "'''" not in body, f"{path.name}: ''' ломает TOML"
-        (claude_dir / f"{name}.md").write_text(
+        (claude_dir / f"{name}.md").write_bytes((  # байты: \n без замены на \r\n и на Python 3.9
             f"---\nname: {name}\ndescription: {meta['description']}\n"
             f"tools: {meta['claude_tools']}\nmodel: {meta['claude_model']}\n"
             + (f"effort: {meta['claude_effort']}\n" if "claude_effort" in meta else "")
-            + f"omitClaudeMd: true\n---\n\n{body}\n",
-            encoding="utf-8", newline="\n")
+            + f"omitClaudeMd: true\n---\n\n{body}\n").encode("utf-8"))
         description = meta["description"].replace("\\", "\\\\").replace('"', '\\"')
-        (codex_dir / f"{name}.toml").write_text(
+        (codex_dir / f"{name}.toml").write_bytes((
             f'name = "{name}"\ndescription = "{description}"\n'
             f'model = "{meta["codex_model"]}"\nmodel_reasoning_effort = "{meta["codex_effort"]}"\n'
-            f"developer_instructions = '''\n{body}\n'''\n",
-            encoding="utf-8", newline="\n")
+            f"developer_instructions = '''\n{body}\n'''\n").encode("utf-8"))
         built.add(name)
         print(f"{path.name} -> {name}")
     # агенты от удалённых или переименованных ролей

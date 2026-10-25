@@ -90,7 +90,7 @@ def main():
               f"## Проверка офиса\n{res['Офис']['проверка']['ответ']}\n\n"
               f"## Проверка одного чата\n{res['Один чат']['проверка']['ответ']}\n")
     (ROOT / "docs").mkdir(exist_ok=True)
-    (ROOT / "docs" / "испытание.md").write_text(report, encoding="utf-8", newline="\n")
+    (ROOT / "docs" / "испытание.md").write_bytes(report.encode("utf-8"))  # \n как есть и на Python 3.9
     print(verdict, "\nОтчёт: docs/испытание.md")
 
 

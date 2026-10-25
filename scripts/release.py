@@ -5,6 +5,7 @@
 releases/latest/download/my-office.zip. Внутри архива всё лежит в папке my-office/.
 """
 import json
+import shutil
 import subprocess
 import sys
 import tomllib
@@ -51,6 +52,16 @@ def main():
                    capture_output=True)
     if git("status", "--porcelain").strip():
         fail("агенты в .claude/.codex не совпадают с роли/ — пересобери и закоммить")
+
+    if not shutil.which("uv"):
+        fail("нужен uv: тесты гоняются и на Python 3.9 — его даёт Mac с инструментами Apple")
+    for py in ([sys.executable], ["uv", "run", "--no-project", "--python", "3.9", "python"]):
+        r = subprocess.run([*py, "-X", "utf8", "-m", "unittest", "discover", "tests"], cwd=ROOT,
+                           capture_output=True, text=True, encoding="utf-8", errors="replace")
+        if r.returncode:
+            fail(f"тесты не прошли ({' '.join(py)}):\n{r.stderr[-2000:]}")
+    if git("status", "--porcelain").strip():
+        fail("тесты оставили изменения в репозитории")
 
     json.loads((ROOT / ".claude/settings.json").read_text(encoding="utf-8"))
     json.loads((ROOT / ".codex/hooks.json").read_text(encoding="utf-8"))

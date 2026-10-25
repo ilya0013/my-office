@@ -1,11 +1,19 @@
 """Сборка ролей: из роли/*.md получаются агенты Claude Code и Codex.
 Запуск: python -m unittest discover tests
 """
+import re
 import subprocess
 import sys
-import tomllib
 import unittest
+try:
+    import tomllib
+except ImportError:  # Python 3.9–3.10: на Mac Python от Apple — 3.9
+    tomllib = None
 from pathlib import Path
+
+# Ровно то, что пишет build_agents.py: строки key = "..." и в конце developer_instructions = '''...'''.
+# Всё, что не так, — ошибка. Мягче tomllib только там, что сборка и так не пишет: ''' в теле, повтор ключа.
+CODEX_TOML = re.compile(r"((?:\w+ = \"(?:[^\"\\\n]|\\[\"\\])*\"\n)+)developer_instructions = '''\n(.*)'''\n", re.S)
 
 ROOT = Path(__file__).resolve().parent.parent
 WORKERS = ["scout", "manager", "checker"]
@@ -17,7 +25,13 @@ def frontmatter(path):
 
 
 def codex(name):
-    return tomllib.loads((ROOT / ".codex" / "agents" / f"{name}.toml").read_text(encoding="utf-8"))
+    text = (ROOT / ".codex" / "agents" / f"{name}.toml").read_text(encoding="utf-8")
+    if tomllib:
+        return tomllib.loads(text)
+    m = CODEX_TOML.fullmatch(text)
+    assert m, f"{name}.toml: не тот формат, Codex его не прочтёт"
+    agent = {k: re.sub(r"\\(.)", r"\1", v) for k, v in re.findall(r'(\w+) = "(.*)"', m[1])}
+    return {**agent, "developer_instructions": m[2]}
 
 
 class BuildAgents(unittest.TestCase):
