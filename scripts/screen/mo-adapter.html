@@ -2,9 +2,10 @@
   /* Мой офис: две вкладки в одном окне. «Офис» — пиксельный офис, статусы — пузыри над человечками.
      «База» — все компании таблицей, как в Excel: стадия, сайт, почему, контакт, письмо с переводом.
      Решения владелец принимает в чате, экран только показывает */
-  /* на весь экран офис не шире 1000 px: крупнее — человечки огромные, за ними трудно следить */
-  body:not(.kiosk) #stage { width:min(100%, 1000px, calc((100vh - var(--mo-reserve, 140px)) * 352 / 208)); margin:0 auto; }
-  body:not([data-moview="base"]) .wrap { max-width:1032px !important; margin:0 auto; }   /* шапка и вкладки — по краю офиса */
+  /* офис целиком в окне и не шире 860 px (крупнее — громоздко); ширину считает fitLayout по настоящим
+     пропорциям комнаты — при третьем ряде столов она выше */
+  body:not(.kiosk) #stage { width:min(100%, var(--mo-stage-w, 860px)); margin:0 auto; }
+  body:not([data-moview="base"]) .wrap { max-width:calc(var(--mo-stage-w, 860px) + 32px) !important; margin:0 auto; }   /* шапка и вкладки — по краю офиса */
   body[data-moview="base"] .wrap { max-width:none !important; }   /* таблице — вся ширина */
   #mo-view { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:0 0 8px; }
   #mo-view button { background:none; border:1px solid var(--line); color:var(--muted); border-radius:6px; padding:5px 14px; font:inherit; font-size:13.5px; cursor:pointer; }

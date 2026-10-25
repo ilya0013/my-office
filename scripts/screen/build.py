@@ -88,7 +88,8 @@ h = h[:s0] + '''  function fitLayout() {
     // холст с целым внутренним масштабом растянут CSS (pixelated)
     const wrap = document.querySelector('.wrap'), pad = 32;
     const maxH = Math.max(180, window.innerHeight - 130);   // 130 — шапка и вкладки
-    const officeW = Math.min(window.innerWidth - pad, 1000, (maxH - 4) * CW / CH + 4);   // 1000 — как в CSS #stage
+    const officeW = Math.min(window.innerWidth - pad, 860, (maxH - 4) * CW / CH + 4);   // 860 — потолок, крупнее громоздко
+    b.style.setProperty('--mo-stage-w', Math.floor(officeW) + 'px');
     if (wrap) wrap.style.maxWidth = 'none';
     mainEl.style.setProperty('--stage-w', '100%');
     mainEl.style.setProperty('--stage-h', Math.floor((officeW - 4) * CH / CW + 4) + 'px');
