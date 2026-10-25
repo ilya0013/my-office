@@ -1,27 +1,22 @@
 <style>
-  /* Мой офис. Широкое окно (≥1100 px): слева офис и команда, справа вкладки «Сейчас от вас» и «Компании» —
-     колонка ровно по окну, листается только открытая вкладка. Узкое (встроенный браузер рядом с чатом):
-     офис сверху, под ним три вкладки (третья — «Команда») */
+  /* Мой офис. Широкое окно (≥1100 px): слева офис, справа вкладки «Сейчас от вас» и «Компании» — колонка
+     ровно по окну, листается только открытая вкладка. Узкое (встроенный браузер рядом с чатом): офис сверху,
+     под ним те же вкладки. Кто чем занят — пузыри над человечками, отдельного списка команды нет */
   body:not(.kiosk) #stage { width:min(100%, calc((100vh - var(--mo-reserve, 150px)) * 352 / 208)); margin:0 auto; }
-  body.mo-wide:not(.kiosk) #stage { --mo-reserve: 260px; }
+  body.mo-wide:not(.kiosk) #stage { --mo-reserve: 90px; }
   body.mo-wide #mo-layout { display:grid; grid-template-columns:minmax(0, var(--mo-office-w, 60%)) minmax(360px, 1fr); gap:12px; align-items:start; }
   #mo { display:flex; flex-direction:column; gap:8px; margin-top:8px; min-width:0; }
   body.mo-wide #mo { margin-top:0; height:calc(100vh - 60px); }
   body.mo-wide footer { display:none; }
   body.mo-wide .wrap { padding-bottom:8px; }
-  #mo-team { margin-top:8px; }
   #mo-tabs { display:flex; gap:4px; flex-wrap:wrap; }
   #mo-tabs button { background:none; border:1px solid var(--line); color:var(--muted); border-radius:6px; padding:5px 12px; font:inherit; font-size:13px; cursor:pointer; }
   #mo-tabs button[aria-selected="true"] { background:var(--panel); color:var(--text); border-color:#4a4f6b; }
   #mo-tabs b { font-weight:600; margin-inline-start:4px; }
   #mo-tabs b.you { color:#1a1c2c; background:#ffe08a; border-radius:9px; padding:0 6px; }
-  body.mo-wide #mo-tabs [data-tab="team"] { display:none; }   /* в широком команда под офисом */
   #mo > [data-pane] { display:none; }
-  [data-motab="now"] #mo > [data-pane="now"], [data-motab="board"] #mo > [data-pane="board"], [data-motab="team"] #mo > [data-pane="team"] { display:block; }
+  [data-motab="now"] #mo > [data-pane="now"], [data-motab="board"] #mo > [data-pane="board"] { display:block; }
   body.mo-wide #mo > [data-pane] { flex:0 1 auto; min-height:0; overflow:auto; }
-  body.mo-wide #cards { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); column-gap:18px; }
-  body.mo-wide #mo-team { max-height:230px; overflow:auto; }
-  body.mo-wide #cards .card:nth-child(-n+2) { border-top:0; }
   #mo > [data-pane] > h3 { display:none; }
   .mo-p { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:7px 10px; min-width:0; }
   .mo-p h3 { margin:0 0 5px; font-size:11.5px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; }
@@ -53,7 +48,7 @@
   #mo-rest { font-size:12px; color:var(--muted); margin-top:6px; overflow-wrap:anywhere; }
   #mo-rest:empty { display:none; }
   /* команда — строками */
-  #cards { display:block; margin-top:0; max-height:none; }
+  #cards { display:none; }   /* список Cubicle не показываем: статусы — пузыри над человечками */
   #cards .card { background:none; border:0; border-top:1px solid var(--line); border-radius:0; padding:4px 0; }
   #cards .card:first-child { border-top:0; }
   .mo-tr { display:flex; align-items:center; gap:7px; font-size:12.5px; min-width:0; white-space:nowrap; }
@@ -500,8 +495,8 @@
     copyText(text).then((ok) => toast(ok ? `«${text}» скопировано — вставьте в чат Боссу` : `Скопируйте вручную: ${text}`));
   });
 
-  // Вкладки; «Команда» в широком окне — под офисом слева
-  const TABS = ['now', 'board', 'team'];
+  // Вкладки «Сейчас от вас» и «Компании»
+  const TABS = ['now', 'board'];
   let tab = 'now';
   try { const t = localStorage.getItem('myoffice.tab2'); if (TABS.includes(t)) tab = t; } catch (_) {}
   function showTab(t) {
@@ -509,14 +504,13 @@
     document.querySelectorAll('#mo-tabs [data-tab]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
     try { localStorage.setItem('myoffice.tab2', t); } catch (_) {}
   }
-  let placedWide = null;
-  function place(wide) {
-    const team = document.getElementById('mo-team'), left = document.getElementById('mo-left'), mo = document.getElementById('mo');
-    if (!team || !left || !mo || placedWide === wide) return;
-    if (placedWide === null) document.getElementById('mo-tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-tab]'); if (b) showTab(b.dataset.tab); });
-    placedWide = wide;
-    if (wide) left.appendChild(team); else mo.appendChild(team);
-    showTab(wide && tab === 'team' ? 'now' : tab);
+  let placed = false;
+  function place() {
+    const tabs = document.getElementById('mo-tabs');
+    if (placed || !tabs) return;
+    placed = true;
+    tabs.addEventListener('click', (e) => { const b = e.target.closest('[data-tab]'); if (b) showTab(b.dataset.tab); });
+    showTab(tab);
     render();
   }
 

@@ -40,10 +40,10 @@ rep('''  <div id="cards"></div>
 ''', '''  </div>
   </div>
   <section id="mo">
-    <nav id="mo-tabs"><button type="button" data-tab="now">Сейчас от вас<span id="mo-now-n"></span></button><button type="button" data-tab="board">Компании<span id="mo-board-n"></span></button><button type="button" data-tab="team">Команда</button></nav>
+    <nav id="mo-tabs"><button type="button" data-tab="now">Сейчас от вас<span id="mo-now-n"></span></button><button type="button" data-tab="board">Компании<span id="mo-board-n"></span></button></nav>
     <div class="mo-p" id="mo-now" data-pane="now"><h3>Сейчас от вас нужно</h3><ul id="mo-wait"></ul></div>
     <div class="mo-p" id="mo-board-box" data-pane="board"><h3>Компании</h3><div id="mo-board"></div><div id="mo-rest"></div></div>
-    <div class="mo-p" id="mo-team" data-pane="team"><h3>Команда</h3><div id="cards"></div></div>
+    <div id="cards"></div>
   </section>
   </div>
 ''')
@@ -84,13 +84,13 @@ h = h[:s0] + '''  function fitLayout() {
     b.classList.remove('side');
     const wide = window.innerWidth >= 1100;
     b.classList.toggle('mo-wide', wide);
-    if (window.MO) window.MO.place(wide);
+    if (window.MO) window.MO.place();
     if (KIOSK || !animOn()) { b.classList.remove('fit'); return; }
     b.classList.add('fit');
     // Одна сетка: офис во всю ширину своей колонки (холст с целым внутренним масштабом растянут CSS,
     // pixelated). Упёрлись в высоту — сужаем всю сетку, чтобы края офиса и блоков под ним совпадали.
     const wrap = document.querySelector('.wrap'), pad = 32;
-    const maxH = wide ? window.innerHeight - 260 : Math.max(180, window.innerHeight * 0.55);   // 260 — шапка и команда под офисом
+    const maxH = wide ? window.innerHeight - 90 : Math.max(180, window.innerHeight * 0.55);   // 90 — шапка и поля
     const page = window.innerWidth - pad;
     const officeW = Math.min(wide ? page * 0.6 : page, (maxH - 4) * CW / CH + 4);
     b.style.setProperty('--mo-office-w', Math.floor(officeW) + 'px');
