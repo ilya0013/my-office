@@ -3,8 +3,11 @@
 """
 import subprocess
 import sys
-import tomllib
 import unittest
+try:
+    import tomllib
+except ImportError:  # Python 3.9–3.10: на Mac Python от Apple — 3.9
+    tomllib = None
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -39,6 +42,7 @@ class BuildAgents(unittest.TestCase):
             self.assertIn(meta["model"], {"haiku", "sonnet"})
             self.assertNotIn("Bash", meta["tools"])  # отправлять наружу нечем
 
+    @unittest.skipIf(tomllib is None, "агенты Codex не проверены: нужен Python 3.11+")
     def test_codex_agents(self):
         for name in WORKERS:
             agent = codex(name)
@@ -55,6 +59,7 @@ class BuildAgents(unittest.TestCase):
         for f in stale:
             self.assertFalse(f.exists(), f"{f.name}: агент без роли остался")
 
+    @unittest.skipIf(tomllib is None, "агенты Codex не проверены: нужен Python 3.11+")
     def test_same_instructions_in_both(self):
         for name in WORKERS:
             text = (ROOT / ".claude" / "agents" / f"{name}.md").read_text(encoding="utf-8")
