@@ -93,8 +93,9 @@ h = h[:s0] + '''  function fitLayout() {
     b.classList.add('fit');
     // Одна сетка: офис во всю ширину своей колонки (холст с целым внутренним масштабом растянут CSS,
     // pixelated). Упёрлись в высоту — сужаем всю сетку, чтобы края офиса и блоков под ним совпадали.
-    const wrap = document.querySelector('.wrap'), pad = 32, side = wide ? 380 + 12 : 0;
+    const wrap = document.querySelector('.wrap'), pad = 32, side = wide ? Math.min(620, Math.max(380, window.innerWidth * 0.32)) + 12 : 0;
     const top = mainEl.getBoundingClientRect().top + window.scrollY;
+    b.style.setProperty('--mo-top', Math.ceil(top + 16) + 'px');   // правая колонка — ровно до низа окна
     const maxH = wide ? window.innerHeight - top - 24 : Math.max(180, window.innerHeight * 0.6);
     let page = window.innerWidth - pad;  // без потолка: сколько позволяет окно, столько и видно
     const officeW = Math.min(page - side, (maxH - 4) * CW / CH + 4);

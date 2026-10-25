@@ -1,23 +1,26 @@
 <style>
-  /* Мой офис: раскладка. ≥1200 px — слева офис и команда, справа панели; уже — офис сверху, под ним вкладки */
-  body.mo-wide #mo-layout { display:grid; grid-template-columns:minmax(0,1fr) clamp(360px, 28vw, 560px); gap:12px; align-items:start; }
+  /* Мой офис: раскладка. ≥1200 px — слева офис и команда, справа «Ждёт вас» и вкладки высотой в окно
+     (прокручивается только открытая вкладка); уже — офис сверху, под ним вкладки */
+  body.mo-wide #mo-layout { display:grid; grid-template-columns:minmax(0,1fr) clamp(380px, 32vw, 620px); gap:12px; align-items:start; }
   /* офис не выше окна: под ним должна остаться видна команда (--mo-reserve — место под шапку и команду) */
   body:not(.kiosk) #stage { width:min(100%, calc((100vh - var(--mo-reserve, 150px)) * 352 / 208)); margin:0 auto; }
   body.mo-wide:not(.kiosk) #stage { --mo-reserve: 300px; }
   #mo { display:flex; flex-direction:column; gap:8px; margin-top:8px; min-width:0; }
-  body.mo-wide #mo { margin-top:0; }
+  body.mo-wide #mo { margin-top:0; position:sticky; top:8px; height:calc(100vh - var(--mo-top, 60px)); }
+  body.mo-wide #mo > .mo-p:not([data-pane="wait"]) { flex:1 1 auto; min-height:0; overflow:auto; }
+  body.mo-wide footer { display:none; }   /* страница целиком в окне — без общей прокрутки */
+  body.mo-wide .wrap { padding-bottom:8px; }
   .mo-p { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:7px 10px; min-width:0; }
   #mo-team { margin-top:8px; }
   .mo-p h3 { margin:0 0 5px; font-size:11.5px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; }
   #mo-tabs { display:flex; gap:4px; flex-wrap:wrap; }
   #mo-tabs button { background:none; border:1px solid var(--line); color:var(--muted); border-radius:6px; padding:4px 10px; font:inherit; font-size:12.5px; cursor:pointer; }
   #mo-tabs button[aria-selected="true"] { background:var(--panel); color:var(--text); border-color:#4a4f6b; }
-  body.mo-wide #mo-tabs { display:none; }
-  body:not(.mo-wide) #mo > .mo-p:not([data-pane="wait"]) { display:none; }
-  body:not(.mo-wide)[data-motab="board"] #mo > [data-pane="board"], body:not(.mo-wide)[data-motab="flow"] #mo > [data-pane="flow"],
-  body:not(.mo-wide)[data-motab="team"] #mo > [data-pane="team"], body:not(.mo-wide)[data-motab="nums"] #mo > [data-pane="nums"],
-  body:not(.mo-wide)[data-motab="dec"] #mo > [data-pane="dec"] { display:block; }
-  body:not(.mo-wide) #mo > .mo-p:not([data-pane="wait"]) h3 { display:none; }
+  body.mo-wide #mo-tabs [data-tab="team"] { display:none; }   /* в широком команда под офисом */
+  #mo > .mo-p:not([data-pane="wait"]) { display:none; }
+  [data-motab="board"] #mo > [data-pane="board"], [data-motab="flow"] #mo > [data-pane="flow"], [data-motab="team"] #mo > [data-pane="team"],
+  [data-motab="nums"] #mo > [data-pane="nums"], [data-motab="dec"] #mo > [data-pane="dec"], [data-motab="help"] #mo > [data-pane="help"] { display:block; }
+  #mo > .mo-p:not([data-pane="wait"]) h3 { display:none; }
   #mo ul, #mo-team ul { list-style:none; margin:0; padding:0; font-size:12.5px; }
   #mo li { padding:3px 0; border-top:1px solid var(--line); overflow-wrap:anywhere; }
   #mo li:first-child { border-top:0; }
@@ -51,11 +54,9 @@
   .mo-sub { margin-top:2px; }
   #mo-help summary { cursor:pointer; color:var(--muted); font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.6px; }
   #mo-help h4 { margin:6px 0 2px; font-size:12px; color:var(--muted); font-weight:600; }
-  body:not(.mo-wide) #mo-help summary { display:none; }
+  #mo-help summary { display:none; }
   #mo-toast { position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#1f5130; color:#dcffe2; border-radius:8px; padding:7px 14px; font-size:13px; z-index:20; box-shadow:0 6px 20px rgba(0,0,0,.4); display:none; }
-  body:not(.mo-wide)[data-motab="help"] #mo > [data-pane="help"] { display:block; }
   /* Решения: кандидаты и письма карточками */
-  body.mo-wide #mo-dec { max-height:62vh; overflow:auto; }
   #mo-dec h4 { margin:8px 0 3px; font-size:12px; color:var(--muted); font-weight:600; }
   #mo-dec h4:first-child { margin-top:0; }
   .mo-card { font-size:12.5px; padding:5px 0; border-top:1px solid var(--line); overflow-wrap:anywhere; }
@@ -407,7 +408,6 @@
   }
   function render() {
     if (!document.getElementById('mo')) return;
-    const wide = document.body.classList.contains('mo-wide');
     const leads = Object.entries(S.leads);
     const by = (c) => leads.filter(([, l]) => l.status === c);
     const empty = cols().filter((c) => !by(c).length);
@@ -422,7 +422,7 @@
     if (S.boss.status === 'waiting') wait.unshift(wait.length ? `<li class="w">🙋 Босс ждёт вас${S.waitText ? ': ' + esc(S.waitText) : ''}</li>`
       : `<li class="w">🙋 Босс ждёт ответа — посмотрите чат<div class="mo-sub">${say('что в работе?')}</div></li>`);
     set('mo-wait', wait.join('') || '<li class="mute">Пока ничего — команда работает.</li>');
-    set('mo-flow', S.flow.slice(wide ? -8 : -80).reverse().map((f) => `<li><span class="t">${hhmm(f.at)}</span>`
+    set('mo-flow', S.flow.slice(-80).reverse().map((f) => `<li><span class="t">${hhmm(f.at)}</span>`
       + (f.to === '📋' ? `📋 ${who(f.from)}: ${f.slug && S.leads[f.slug] ? leadA(f.slug, S.leads[f.slug].title) : ''} → ${esc(f.text)}${f.slug ? letterA(f.slug, f.text) : ''}`
         : `${who(f.from)} → ${who(f.to)}: ${linkSlugs(esc(f.text))}`) + '</li>').join('')
       || `<li class="mute">${missing ? 'Жду первого события — напишите Боссу.' : 'Пока тихо.'}</li>`);
@@ -543,7 +543,8 @@
     if (!team || !left || !mo || placedWide === wide) return;
     placedWide = wide;
     if (wide) left.appendChild(team); else mo.appendChild(team);
-    const hd = document.getElementById('mo-help'); if (hd) hd.open = !wide;   // в широком — свёрнут
+    if (wide && tab === 'team') showTab('dec');
+    const hd = document.getElementById('mo-help'); if (hd) hd.open = true;
     renderHelp();
     if (!document.body.dataset.motab) {
       showTab(tab);
