@@ -29,24 +29,21 @@ rep('</style>\n</head>', '</style>\n' + adapter + '</head>')
 # 3. видимые надписи
 rep('<h1>Cubicle <small id="co"></small></h1>', '<h1>Мой офис <small id="co"></small></h1>')
 rep('<span><a href="https://github.com/caglarutkuguler/cubicle" target="_blank" rel="noopener">Cubicle</a> · MIT</span>', '<span>Мой офис</span>')
-# раскладка: слева офис и команда, справа (или вкладками под офисом) — панели
+# раскладка: две вкладки в одном окне — «Офис» (пиксельный офис) и «База» (все компании таблицей)
 rep('''  <div id="main">
-  <div id="stage">''', '''  <div id="mo-layout">
+  <div id="stage">''', '''  <nav id="mo-view"><button type="button" data-view="office">Офис</button><button type="button" data-view="base">База<span id="mo-base-n"></span></button><span id="mo-status"></span></nav>
+  <div id="mo-layout">
   <div id="mo-left">
   <div id="main">
   <div id="stage">''')
 rep('''  <div id="cards"></div>
   </div>
 ''', '''  </div>
-  <div class="mo-p" id="mo-team" data-pane="team"><h3>Команда</h3><div id="cards"></div></div>
   </div>
-  <section id="mo">
-    <div class="mo-p" data-pane="wait"><h3>Ждёт вас</h3><ul id="mo-wait"></ul></div>
-    <nav id="mo-tabs"><button type="button" data-tab="board">Конвейер</button><button type="button" data-tab="flow">Ход работы</button><button type="button" data-tab="team">Команда</button><button type="button" data-tab="nums">Цифры</button><button type="button" data-tab="help">Как управлять</button></nav>
-    <div class="mo-p" data-pane="board"><h3>Конвейер</h3><div id="mo-board"></div></div>
-    <div class="mo-p" data-pane="flow"><h3>Ход работы</h3><ul id="mo-flow"></ul></div>
-    <div class="mo-p" data-pane="nums"><h3>Цифры</h3><ul id="mo-nums"></ul></div>
-    <div class="mo-p" data-pane="help"><details id="mo-help"><summary>Как управлять</summary><div id="mo-help-body"></div></details></div>
+  <section id="mo" class="mo-p">
+    <div class="mo-base-head"><span id="mo-base-sum"></span><button type="button" class="mo-btn" id="mo-csv">Скачать для Excel</button></div>
+    <div id="mo-base-table"></div>
+    <div id="cards"></div>
   </section>
   </div>
 ''')
@@ -79,26 +76,21 @@ rep("const bubMax = Math.max(80, Math.floor(3.3 * T * k - 6)) + 'px';", "const b
 rep("const deskCount = Math.max(4, Math.min(DESKS.length, Math.ceil((sprites.size + (hum ? 1 : 0)) / 4) * 4));",
     "const deskCount = Math.max(6, Math.min(DESKS.length, Math.ceil((sprites.size + (hum ? 1 : 0)) / 3) * 3));")
 rep("  resizeCanvas();\n  loadCatalog().then(applySettings).then(applyView);", "  layoutFor(0, true);\n  loadCatalog().then(applySettings).then(applyView);")
-# офис сам подгоняет размер: целый масштаб, ≥1200 px — две колонки, уже — офис ≤40 % высоты и вкладки
+# офис сам подгоняет размер: во всю ширину окна, но не выше окна (под ним ничего нет — «База» отдельной вкладкой)
 s0 = h.index('  function fitLayout() {'); s1 = h.index("  window.addEventListener('resize', () => fitLayout());")
 h = h[:s0] + '''  function fitLayout() {
     if (!mainEl) return;
     const b = document.body;
     b.classList.remove('side');
-    const wide = window.innerWidth >= 1200;
-    b.classList.toggle('mo-wide', wide);
-    if (window.MO) window.MO.place(wide);
+    if (window.MO) window.MO.place();
     if (KIOSK || !animOn()) { b.classList.remove('fit'); return; }
     b.classList.add('fit');
-    // Одна сетка: офис во всю ширину своей колонки (холст с целым внутренним масштабом растянут CSS,
-    // pixelated). Упёрлись в высоту — сужаем всю сетку, чтобы края офиса и блоков под ним совпадали.
-    const wrap = document.querySelector('.wrap'), pad = 32, side = wide ? 380 + 12 : 0;
-    const top = mainEl.getBoundingClientRect().top + window.scrollY;
-    const maxH = wide ? window.innerHeight - top - 24 : Math.max(180, window.innerHeight * 0.6);
-    let page = window.innerWidth - pad;  // без потолка: сколько позволяет окно, столько и видно
-    const officeW = Math.min(page - side, (maxH - 4) * CW / CH + 4);
-    page = Math.floor(officeW + side);
-    if (wrap) wrap.style.maxWidth = (page + pad) + 'px';
+    // холст с целым внутренним масштабом растянут CSS (pixelated)
+    const wrap = document.querySelector('.wrap'), pad = 32;
+    const maxH = Math.max(180, window.innerHeight - 130);   // 130 — шапка и вкладки
+    const officeW = Math.min(window.innerWidth - pad, 860, (maxH - 4) * CW / CH + 4);   // 860 — потолок, крупнее громоздко
+    b.style.setProperty('--mo-stage-w', Math.floor(officeW) + 'px');
+    if (wrap) wrap.style.maxWidth = 'none';
     mainEl.style.setProperty('--stage-w', '100%');
     mainEl.style.setProperty('--stage-h', Math.floor((officeW - 4) * CH / CW + 4) + 'px');
     try { clampCam(); } catch (_) {}
@@ -113,7 +105,12 @@ rep('''  };
   const params = new URLSearchParams(location.search);''', '''  };
 ''' + ru + '''  const params = new URLSearchParams(location.search);''')
 rep("(params.get('lang') || savedLang || navigator.language || 'en')", "(params.get('lang') || savedLang || 'ru')")
-rep("const LANG_NAMES = { en: 'English',", "const LANG_NAMES = { ru: 'Русский', en: 'English',")
+rep("const lang = STR[wantLang] ? wantLang : 'en';", "const lang = STR[wantLang] ? wantLang : 'ru';")   # сохранённый de/fr… — русский
+rep("const LANG_NAMES = { en: 'English', tr: 'Türkçe', de: 'Deutsch', es: 'Español', fr: 'Français', zh: '中文', ar: 'العربية' };",
+    "const LANG_NAMES = { ru: 'Русский', en: 'English' };")
+# только русский и запасной английский: встроенный браузер Claude Code открывает файлы до 512 КБ
+s0 = h.index('    tr: {'); s1 = h.index('  };\n', s0)
+h = h[:s0] + h[s1:]
 rep("const SPEECH_LANG = { en: 'en-US',", "const SPEECH_LANG = { ru: 'ru-RU', en: 'en-US',")
 rep("id: 'pixel', name: { en: 'Pixel (classic)',", "id: 'pixel', name: { ru: 'Пиксели (классика)', en: 'Pixel (classic)',")
 # 5. лента: текущий шаг для пузыря, моменты выдачи и сдачи работы
@@ -138,6 +135,7 @@ rep('''    if (s.typing && s.task) {
     if (s.typing && s.task) {
       // the task code''')
 rep("g.fillText(`Cubicle · ${officeName}`, 4, 4.8);", "g.fillText('Мой офис', 4, 4.8);")
+rep("['✋ ' + ((t && t.identifier) || L.waitBubble), 'wait']", "[(t && t.identifier) ? '✋ ' + t.identifier : L.waitBubble, 'wait']")   # одна рука, не «✋ ✋ ждёт вас»
 rep("a.download = 'cubicle-appearance.json';", "a.download = 'moy-ofis-vneshnost.json';")
 rep("document.getElementById('co').textContent = labels.join(' · ');", "document.getElementById('co').textContent = window.MO ? window.MO.label : '';")
 # 6. настройки: без серверных разделов (Telegram, настройки сервера)

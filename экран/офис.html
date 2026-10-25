@@ -313,57 +313,40 @@
   footer { color:var(--muted); font-size:12px; margin-top:12px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
 </style>
 <style>
-  /* Мой офис: раскладка. ≥1200 px — слева офис и команда, справа панели; уже — офис сверху, под ним вкладки */
-  body.mo-wide #mo-layout { display:grid; grid-template-columns:minmax(0,1fr) 380px; gap:12px; align-items:start; }
-  body.fit #stage { width:100%; }
-  #mo { display:flex; flex-direction:column; gap:8px; margin-top:8px; min-width:0; }
-  body.mo-wide #mo { margin-top:0; }
-  body.mo-wide.fit #stage { margin:0; }
-  .mo-p { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:7px 10px; min-width:0; }
-  #mo-team { margin-top:8px; }
-  .mo-p h3 { margin:0 0 5px; font-size:11.5px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; }
-  #mo-tabs { display:flex; gap:4px; flex-wrap:wrap; }
-  #mo-tabs button { background:none; border:1px solid var(--line); color:var(--muted); border-radius:6px; padding:4px 10px; font:inherit; font-size:12.5px; cursor:pointer; }
-  #mo-tabs button[aria-selected="true"] { background:var(--panel); color:var(--text); border-color:#4a4f6b; }
-  body.mo-wide #mo-tabs { display:none; }
-  body:not(.mo-wide) #mo > .mo-p:not([data-pane="wait"]) { display:none; }
-  body:not(.mo-wide)[data-motab="board"] #mo > [data-pane="board"], body:not(.mo-wide)[data-motab="flow"] #mo > [data-pane="flow"],
-  body:not(.mo-wide)[data-motab="team"] #mo > [data-pane="team"], body:not(.mo-wide)[data-motab="nums"] #mo > [data-pane="nums"] { display:block; }
-  body:not(.mo-wide) #mo > .mo-p:not([data-pane="wait"]) h3 { display:none; }
-  #mo ul, #mo-team ul { list-style:none; margin:0; padding:0; font-size:12.5px; }
-  #mo li { padding:3px 0; border-top:1px solid var(--line); overflow-wrap:anywhere; }
-  #mo li:first-child { border-top:0; }
-  body:not(.mo-wide) #mo-flow { max-height:40vh; overflow:auto; }
-  #mo .t { color:var(--muted); margin-inline-end:6px; font-variant-numeric:tabular-nums; }
-  #mo .w { color:#ffe08a; }
-  #mo .mute, .mo-st.empty { color:var(--muted); }
-  #mo .num { display:flex; justify-content:space-between; gap:8px; }
-  .mo-st { font-size:12.5px; padding:3px 0; border-top:1px solid var(--line); overflow-wrap:anywhere; }
-  .mo-st:first-child { border-top:0; }
-  .mo-chip { display:inline-block; font-size:11.5px; padding:0 7px; border-radius:9px; background:#33374d; color:#c9cbe0; margin-inline-end:6px; }
-  .mo-st.hot .mo-chip { background:#5a4a12; color:#ffe08a; } .mo-st.good .mo-chip { background:#1f5130; color:#9ff0b4; } .mo-st.bad .mo-chip { background:#2b2e40; color:#8b8da3; }
-  .mo-st.bad a { color:#8b8da3; }
-  /* команда — строками */
-  #cards { display:block; margin-top:0; max-height:none; }
-  #cards .card { background:none; border:0; border-top:1px solid var(--line); border-radius:0; padding:4px 0; }
-  #cards .card:first-child { border-top:0; }
-  .mo-tr { display:flex; align-items:center; gap:7px; font-size:12.5px; min-width:0; white-space:nowrap; }
-  .mo-tr .sw { width:9px; height:9px; border-radius:50%; flex:none; }
-  .mo-tr b { cursor:pointer; }
-  .mo-tr .pill { margin:0; flex:none; }
-  .mo-tr .mo-task { min-width:0; flex:0 1 auto; overflow:hidden; text-overflow:ellipsis; }
-  .mo-tr .mo-step { min-width:0; flex:1 1 0; overflow:hidden; text-overflow:ellipsis; color:var(--muted); }
-  #cards .steps { margin:1px 0 0 16px; font-size:12px; }
-  /* кнопки-фразы: клик копирует текст для чата с Боссом */
-  .mo-say { background:#2b2f47; color:var(--text); border:1px solid #4a4f6b; border-radius:12px; padding:1px 9px; margin:2px 4px 2px 0; font:inherit; font-size:12px; cursor:pointer; }
-  .mo-say:hover { border-color:var(--link); }
-  .mo-say.pri { background:#4a3d12; border-color:#8a7020; color:#ffe08a; }
-  .mo-sub { margin-top:2px; }
-  #mo-help summary { cursor:pointer; color:var(--muted); font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.6px; }
-  #mo-help h4 { margin:6px 0 2px; font-size:12px; color:var(--muted); font-weight:600; }
-  body:not(.mo-wide) #mo-help summary { display:none; }
-  #mo-toast { position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#1f5130; color:#dcffe2; border-radius:8px; padding:7px 14px; font-size:13px; z-index:20; box-shadow:0 6px 20px rgba(0,0,0,.4); display:none; }
-  body:not(.mo-wide)[data-motab="help"] #mo > [data-pane="help"] { display:block; }
+  /* Мой офис: две вкладки в одном окне. «Офис» — пиксельный офис, статусы — пузыри над человечками.
+     «База» — все компании таблицей, как в Excel: стадия, сайт, почему, контакт, письмо с переводом.
+     Решения владелец принимает в чате, экран только показывает */
+  /* офис целиком в окне и не шире 860 px (крупнее — громоздко); ширину считает fitLayout по настоящим
+     пропорциям комнаты — при третьем ряде столов она выше */
+  body:not(.kiosk) #stage { width:min(100%, var(--mo-stage-w, 860px)); margin:0 auto; }
+  body:not([data-moview="base"]) .wrap { max-width:calc(var(--mo-stage-w, 860px) + 32px) !important; margin:0 auto; }   /* шапка и вкладки — по краю офиса */
+  body[data-moview="base"] .wrap { max-width:none !important; }   /* таблице — вся ширина */
+  #mo-view { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:0 0 8px; }
+  #mo-view button { background:none; border:1px solid var(--line); color:var(--muted); border-radius:6px; padding:5px 14px; font:inherit; font-size:13.5px; cursor:pointer; }
+  #mo-view button[aria-selected="true"] { background:var(--panel); color:var(--text); border-color:#4a4f6b; }
+  #mo-view button b { font-weight:600; margin-inline-start:5px; }
+  #mo-status { font-size:13px; color:var(--muted); margin-inline-start:6px; overflow-wrap:anywhere; }
+  #mo-status.you { color:#ffe08a; }
+  body[data-moview="base"] #mo-left, body:not([data-moview="base"]) #mo { display:none; }
+  footer, #cards { display:none; }   /* подсказка Cubicle и список команды не нужны: всё видно в офисе */
+  .mo-p { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:8px 10px; min-width:0; }
+  #mo .mute { color:var(--muted); }
+  .mo-base-head { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; font-size:13px; margin-bottom:6px; }
+  .mo-btn { background:#2b2f47; color:var(--text); border:1px solid #4a4f6b; border-radius:6px; padding:4px 12px; font:inherit; font-size:12.5px; cursor:pointer; text-decoration:none; display:inline-block; }
+  .mo-btn:hover { border-color:var(--link); }
+  .mo-btn.pri { background:#4a3d12; border-color:#8a7020; color:#ffe08a; }
+  .mo-tbl-wrap { overflow-x:auto; }
+  .mo-tbl { width:100%; min-width:900px; border-collapse:collapse; font-size:12.5px; }   /* узко — таблица листается вбок, а не сминается */
+  .mo-tbl th { text-align:left; font-weight:600; color:var(--muted); padding:5px 8px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  .mo-tbl td { padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top; overflow-wrap:break-word; }
+  .mo-tbl td.why { min-width:200px; color:var(--muted); }
+  .mo-tbl tr.you td:first-child { box-shadow:inset 3px 0 #c9a227; }
+  .mo-chip { display:inline-block; font-size:11.5px; padding:1px 8px; border-radius:9px; background:#33374d; color:#c9cbe0; white-space:nowrap; }
+  .mo-chip.you { background:#5a4a12; color:#ffe08a; } .mo-chip.good { background:#1f5130; color:#9ff0b4; } .mo-chip.bad { background:#2b2e40; color:#8b8da3; }
+  .mo-tbl tr.letter td { background:#1d2033; }
+  .mo-letters { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:10px; }
+  .mo-letter { white-space:pre-wrap; font-size:12.5px; line-height:1.45; }
+  .mo-letter h5 { margin:0 0 4px; font-size:12px; color:var(--muted); font-weight:600; }
 </style>
 <script>
 /* «Мой офис»: события хуков (экран/events.js, строки ev({...});) → снимок в формате ленты Cubicle
@@ -424,18 +407,46 @@
   function describe(e) {
     const n = String(e.tool_name || '').toLowerCase(), i = e.tool_input || {};
     // Codex: webrun — поиск (search_query[].q) или открытие найденных страниц (open[])
-    if (n === 'webrun') return i.search_query && i.search_query.length ? '🔎 поиск: ' + short(i.search_query[0].q, 50) : '🌐 открывает страницы';
+    if (n === 'webrun') { const u = ((i.open || [])[0] || {}).ref_id || ''; return i.search_query && i.search_query.length ? '🔎 поиск: ' + short(i.search_query[0].q, 50) : '🌐 открывает ' + (/^https?:/.test(u) ? host(u) : 'страницы'); }
     if (/websearch|web_search|search_query/.test(n)) return '🔎 поиск: ' + short(i.query || i.q || (i.search_query && i.search_query[0] && i.search_query[0].q), 50);
     if (/webfetch|web_fetch|fetch|open_url/.test(n)) return '🌐 открыл сайт: ' + host(i.url || i.ref_id || '');
-    if (/^(write|create|write_file)$/.test(n) || /^(edit|multiedit|str_replace|replace)$/.test(n)) return '✍ пишет ' + short(rel(i.file_path || i.path, e.cwd), 60);
-    if (/apply_patch/.test(n)) { const f = patchFiles(patchText(e)).map((x) => rel(x.path, e.cwd)); return '✍ пишет ' + short(f.join(', ') || 'файлы', 60); }
-    if (/^(read|read_file|view)$/.test(n)) return '📖 читает ' + short(rel(i.file_path || i.path, e.cwd), 60);
-    if (/^(glob|grep|ls|list_directory|search_file_content)$/.test(n)) return '🗂 смотрит папку ' + short(i.pattern || i.path || '', 30);
+    if (/^(write|create|write_file)$/.test(n) || /^(edit|multiedit|str_replace|replace)$/.test(n)) return '✍ пишет ' + what(rel(i.file_path || i.path, e.cwd));
+    if (/apply_patch/.test(n)) { const f = patchFiles(patchText(e)).map((x) => what(rel(x.path, e.cwd))); return '✍ пишет ' + short([...new Set(f)].join(', ') || 'файлы', 60); }
+    if (/^(read|read_file|view)$/.test(n)) return '📖 читает ' + what(rel(i.file_path || i.path, e.cwd));
+    if (/^(glob|grep|ls|list_directory|search_file_content)$/.test(n)) return '🗂 смотрит папку';
     if (/^(agent|task)$/.test(n) || /spawn_agent/.test(n)) return '📨 → ' + nameOf(roleOf(i.subagent_type || i.agent_type || i.role, !(i.subagent_type || i.agent_type || i.role)));
     if (/wait/.test(n)) return '⏳ ждёт сотрудников';
-    if (/exec|shell|bash|command/.test(n)) return '⌨ команда: ' + short([].concat(i.cmd || i.command || '').join(' '), 36);
+    if (/user_input|askuserquestion/.test(n)) return '❓ спрашивает вас в чате';
+    if (/browser|cua|playwright|repl/.test(n)) { const u = (String(i.code || i.url || '').match(/https?:\/\/[^\s"'`)]+/) || [''])[0]; return '🌐 смотрит сайт' + (u ? ' ' + host(u) : ''); }
+    if (/exec|shell|bash|command/.test(n)) return command([].concat(i.cmd || i.command || '').join(' '), e.cwd);
     if (/todo|plan/.test(n)) return '✅ составляет план';
-    return n ? '⚙ ' + short(e.tool_name, 24) : '';
+    return n ? '⚙ работает' : '';
+  }
+  // Файл — словами: досье и письмо компании, каталог, правила, своя инструкция
+  function what(p) {
+    p = String(p || '');
+    const m = p.match(/(лиды|письма|ответы)\/([^\/]+?)\.md$/);
+    if (m && m[2].startsWith('_')) return 'шаблон досье';
+    if (m) { const t = (S.leads[m[2]] && S.leads[m[2]].title) || m[2]; return { 'лиды': 'досье ', 'письма': 'письмо ', 'ответы': 'ответ ' }[m[1]] + t; }
+    if (/каталог\.md$/.test(p)) return 'каталог';
+    if (/ПРАВИЛА\.md$/i.test(p)) return 'правила';
+    if (/роли\//.test(p)) return 'свою инструкцию';
+    if (/входящие\.md$/.test(p)) return 'входящие';
+    if (/(^|\/)_шаблон/.test(p)) return 'шаблон досье';
+    if (/SKILL\.md$/i.test(p)) return 'инструкцию инструмента';
+    return short(p.split('/').pop() || 'файл', 40);
+  }
+  // Команда (Codex читает и правит файлы командами) — по смыслу, без текста команды
+  function command(c, cwd) {
+    const files = [...String(c).matchAll(/[\wА-Яа-яЁё\/:.\\-]+\.md/g)].map((m) => what(rel(m[0], cwd)));
+    const list = short([...new Set(files)].join(', '), 50);
+    if (/Invoke-WebRequest|curl|wget/i.test(c)) return '🌐 открывает сайт';
+    // правят сотрудники только досье и письма; каталог, правила и роли в команде — это чтение
+    const own = short([...new Set(files.filter((f) => /^(досье|письмо|ответ) /.test(f)))].join(', '), 50);
+    if (/Set-Content|Out-File|WriteAllText|Add-Content|\.Replace\(|sed\s+-i|>\s*\S+\.md/i.test(c)) return '✍ правит ' + (own || 'файлы');
+    if (/Get-Content|\bcat\b|\btype\b|Select-String|\brg\b|\bgrep\b/i.test(c)) return '📖 читает ' + (list || 'файлы');
+    if (/Get-ChildItem|\bls\b|\bdir\b/i.test(c)) return '🗂 смотрит папку';
+    return '⚙ работает';
   }
 
   // Статусы компаний: файл лиды/<имя>.md (не _шаблон) и строка «статус: X» в том, что пишется.
@@ -492,6 +503,19 @@
     }
   }
 
+  // Сводка из файлов от хука в конце хода — правда важнее догадок по командам сотрудников
+  function syncFiles(leads, at) {
+    for (const [slug, f] of Object.entries(leads)) {
+      const status = String(f['статус'] || '').trim().toLowerCase().replace(/[.;,]+$/, '');
+      if (f['письмо']) S.written.add(`письма/${slug}.md`);
+      if (!status || !/^[a-zа-яё][a-zа-яё -]{0,28}$/i.test(status)) continue;
+      if (!BASE_COLUMNS.includes(status) && !S.extra.includes(status)) S.extra.push(status);
+      const title = f['компания'] ? short(String(f['компания']).replace(/\s*\(.*$/, ''), 40) : slug;
+      const lead = S.leads[slug];
+      if (!lead) S.leads[slug] = { title, status, by: '', at };
+      else { lead.title = title; if (lead.status !== status) { lead.status = status; lead.at = at; flow(at, 'Файлы', '📋', status, slug); } }
+    }
+  }
   function flow(at, from, to, text, slug) { S.flow.push({ at, from, to, text, slug }); if (S.flow.length > 200) S.flow.shift(); }
   function step(a, text, at) {
     if (!text) return;
@@ -547,6 +571,7 @@
 
   function apply(e, at) {
     const kind = e.hook_event_name || e.event || e.type || '';
+    if (kind === 'MoFiles') { syncFiles(e.leads || {}, at); S.decDirty = true; return; }
     if (kind === 'SubagentStart') {
       const known = e.agent_id && S.byAgent.get(e.agent_id);
       if (known && known.status !== 'running') S.byAgent.delete(e.agent_id);   // тот же id получил новое задание
@@ -656,23 +681,20 @@
       if (!dup(e)) { try { apply(e, (!PLAY && e.__t) || Date.now()); if (e.source === 'agent') S.agentApplied = true; } catch (_) {} }
       applied++;
     }
+    if (S.decDirty && !PLAY) { S.decDirty = false; readDec(); }   // хук переписал решения.js перед снимком
     render();
     return { company: '', agents: [S.boss, ...S.slots].map(out) };
   }
 
   // ---------- панели ----------
-  const hhmm = (ms) => new Date(ms).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  const HUES = ['#e07ab8', '#3bc4c4', '#c9b458', '#a66de0', '#f07b3f'];
-  const colorOf = (n) => COLORS[n] || HUES[[...n].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 0) % HUES.length];
-  const who = (n) => `<b style="color:${colorOf(baseName(n))}">${esc(n)}</b>`;
-  const COL_CLASS = { 'письмо готово': 'hot', 'не подходит': 'bad', 'отказ': 'bad', 'одобрено': 'good', 'отправлено': 'good', 'ответ': 'good', 'встреча': 'good' };
-  const set = (id, html) => { const el = document.getElementById(id); if (el && el.innerHTML !== html) el.innerHTML = html; };
+  // сравниваем с прошлой строкой, не с innerHTML: браузер его нормализует, и таблица перерисовывалась бы каждый раз
+  const shown = {};
+  const set = (id, html) => { const el = document.getElementById(id); if (el && shown[id] !== html) { el.innerHTML = html; shown[id] = html; } };
   // Ссылки на файлы проекта: страница лежит в экран/, корень проекта — '../'. .md откроется текстом.
   const fileA = (path, text) => (PLAY || !S.written.has(path) ? text : `<a href="../${esc(encodeURI(path))}" target="_blank" rel="noopener" title="откроется текстом">${text}</a>`);
   const FILE_RE = /(^|[\s,(])((?:[\wА-Яа-яЁё.-]+\/)*[\wА-Яа-яЁё-][\wА-Яа-яЁё.-]*\.(?:md|txt|csv|json|html))(?=$|[\s,;)])/g;
   function linkText(text) { return esc(text).replace(FILE_RE, (m, pre, path) => pre + fileA(path, path)); }
   const leadA = (slug, text) => fileA(`лиды/${slug}.md`, esc(text));
-  const letterA = (slug, status) => (cols().indexOf(status) >= 3 && !PLAY && S.written.has(`письма/${slug}.md`) ? ' · ' + fileA(`письма/${slug}.md`, 'письмо') : '');
   function linkSlugs(html) {
     for (const slug of Object.keys(S.leads)) {
       const re = new RegExp('(^|[\\s:(])(' + slug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')(?=$|[\\s,.;:)])', 'g');
@@ -682,92 +704,103 @@
   }
   function teamRow(s, label) {
     const t = s.task || {};
-    return `<div class="mo-tr"><span class="sw" style="background:${esc(s.shirt)}"></span><b class="pick" data-id="${esc(s.id)}">${esc(s.name)}</b>`
-      + `<span class="pill p-${esc(s.status)}">${label}</span><span class="mo-task" title="${esc(t.title || '')}">${linkSlugs(esc(t.title || ''))}</span>`
-      + `<span class="mo-step">${linkText(t.step || '')}</span></div>`;
+    return `<div class="mo-tr"><b class="pick" data-id="${esc(s.id)}">${esc(s.name)}</b> ${label} ${linkSlugs(esc(t.title || ''))} ${linkText(t.step || '')}</div>`;
+  }
+
+  // «База»: статус файла → стадия словами; порядок строк — по ходу работы, сначала то, что ждёт вас
+  const STAGE = { 'проверено': ['ждёт вашего «одобряю»', 'you'], 'одобрено': ['одобрено — отправьте', 'you'], 'новый': ['найдена', ''],
+    'письмо готово': ['письмо на проверке', ''], 'отправлено': ['отправлено', 'good'], 'ответ': ['пришёл ответ', 'good'],
+    'встреча': ['встреча', 'good'], 'запас': ['в запасе', 'bad'], 'не подходит': ['не подошла', 'bad'], 'отказ': ['отказ', 'bad'] };
+  const ORDER = Object.keys(STAGE);
+  // «неизвестно» от Разведчика — пустая клетка: так таблица читается легче
+  const info = (slug) => Object.fromEntries(Object.entries((D && D[slug]) || {}).map(([k, v]) => [k, /^неизвестн/i.test(String(v).trim()) ? '' : v]));
+  const mailOf = (d) => (String(d['кому'] || d['контакт'] || '').match(/[\w.+-]+@[\w-]+(\.[\w-]+)+/) || [''])[0];
+  const site = (u) => (/^https?:\/\//.test(u || '') ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(String(u).replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, ''))}</a>` : esc(u || ''));
+  function rows() {
+    const all = Object.entries(S.leads).map(([slug, l]) => [slug, l, info(slug)]);
+    const at = (st) => (ORDER.includes(st) ? ORDER.indexOf(st) : ORDER.length);
+    return all.sort((x, y) => at(x[1].status) - at(y[1].status));
+  }
+  function renderBase() {
+    const list = rows();
+    const n = list.length, wait = list.filter(([, l]) => l.status === 'проверено').length;
+    set('mo-base-n', n ? `<b>${n}</b>` : '');
+    set('mo-base-sum', n ? `Компаний: ${n}` + (wait ? ` · ждут вашего «одобряю»: ${wait} — ответьте Боссу в чате` : '') : '');
+    if (!n) return set('mo-base-table', '<div class="mute">Компаний пока нет. Напишите Боссу в чате: «найди 5 компаний».</div>');
+    const body = list.map(([slug, l, d]) => {
+      const [stage, cls] = STAGE[l.status] || [l.status, ''];
+      const hasLetter = !PLAY && (d['письмо'] || S.written.has(`письма/${slug}.md`));
+      let h = `<tr class="${cls === 'you' ? 'you' : ''}"><td><b>${leadA(slug, l.title)}</b></td><td>${esc(d['город'] || '')}</td><td>${site(d['сайт'])}</td>`
+        + `<td><span class="mo-chip ${cls}">${esc(stage)}</span></td><td class="why">${esc(d['почему'] || '')}</td><td>${esc(mailOf(d) || d['контакт'] || '')}</td>`
+        + `<td>${hasLetter ? `<button type="button" class="mo-btn" data-letter="${esc(slug)}">${opened[slug] ? 'скрыть' : 'читать'}</button>` : ''}</td></tr>`;
+      if (opened[slug]) {
+        const mail = mailOf(d);
+        const send = l.status === 'одобрено' && mail ? ` <a class="mo-btn pri" href="${esc(`mailto:${mail}?subject=${encodeURIComponent(d['тема'] || '')}&body=${encodeURIComponent(plain(d['письмо']))}`)}">✉ открыть в почте</a>` : '';
+        h += `<tr class="letter"><td colspan="7">${d['тема'] ? `<div class="mute">Тема: ${esc(d['тема'])}${send}</div>` : send}`
+          + (d['письмо'] ? `<div class="mo-letters"><div class="mo-letter"><h5>Письмо</h5>${md(d['письмо'])}</div>`
+            + (d['перевод'] ? `<div class="mo-letter"><h5>Перевод для вас</h5>${md(d['перевод'])}</div>` : '') + '</div>'
+            : `<div class="mute">Текст появится после конца хода команды. Файл: ${fileA(`письма/${slug}.md`, 'письмо')}</div>`) + '</td></tr>';
+      }
+      return h;
+    }).join('');
+    set('mo-base-table', '<div class="mo-tbl-wrap"><table class="mo-tbl"><thead><tr><th>Компания</th><th>Город</th><th>Сайт</th><th>Стадия</th><th>Почему подходит</th><th>Контакт</th><th>Письмо</th></tr></thead>'
+      + `<tbody>${body}</tbody></table></div>` + (PLAY ? '<div class="mute" style="margin-top:6px">В демо писем и подробностей нет — в вашем офисе здесь будут письма с переводом.</div>' : ''));
   }
   function render() {
     if (!document.getElementById('mo')) return;
-    const wide = document.body.classList.contains('mo-wide');
-    const leads = Object.entries(S.leads);
-    const by = (c) => leads.filter(([, l]) => l.status === c);
-    const empty = cols().filter((c) => !by(c).length);
-    set('mo-board', (leads.length ? cols().filter((c) => by(c).length).map((c) => `<div class="mo-st ${COL_CLASS[c] || ''}"><span class="mo-chip">${esc(c)} <b>${by(c).length}</b></span>`
-      + by(c).map(([slug, l]) => leadA(slug, l.title) + letterA(slug, c)).join(', ') + '</div>').join('')
-      : '<div class="mo-st empty">Компаний пока нет — их найдёт Разведчик.</div>')
-      + (leads.length && empty.length ? `<div class="mo-st empty">пусто: ${esc(empty.join(', '))}</div>` : ''));
-    const file = (slug) => (PLAY ? ' · <span class="mute">в демо файлов нет</span>' : S.written.has(`письма/${slug}.md`) ? ' · ' + fileA(`письма/${slug}.md`, 'открыть файл') : '');
-    const wait = by('письмо готово').map(([slug, l]) => `<li>✉ ${leadA(slug, l.title)} — письмо готово<div class="mo-sub">${say('покажи письмо ' + slug, 'pri')}<span class="mute">Босс покажет письмо в чате</span></div>`
-      + `<div class="mo-sub">${say('одобряю ' + slug)}${say('перепиши письмо ' + slug + ' короче')}${file(slug)}</div></li>`);
-    if (S.boss.status === 'waiting') wait.unshift(wait.length ? `<li class="w">🙋 Босс ждёт вас${S.waitText ? ': ' + esc(S.waitText) : ''}</li>`
-      : `<li class="w">🙋 Босс ждёт ответа — посмотрите чат<div class="mo-sub">${say('что в работе?')}</div></li>`);
-    set('mo-wait', wait.join('') || '<li class="mute">Пока ничего — команда работает.</li>');
-    set('mo-flow', S.flow.slice(wide ? -8 : -80).reverse().map((f) => `<li><span class="t">${hhmm(f.at)}</span>`
-      + (f.to === '📋' ? `📋 ${who(f.from)}: ${f.slug && S.leads[f.slug] ? leadA(f.slug, S.leads[f.slug].title) : ''} → ${esc(f.text)}${f.slug ? letterA(f.slug, f.text) : ''}`
-        : `${who(f.from)} → ${who(f.to)}: ${linkSlugs(esc(f.text))}`) + '</li>').join('')
-      || `<li class="mute">${missing ? 'Жду первого события — напишите Боссу.' : 'Пока тихо.'}</li>`);
-    const nums = [['Компаний в работе', leads.length]];
-    for (const c of cols()) if (by(c).length) nums.push(['· ' + c, by(c).length]);
-    nums.push(['Работало одновременно (максимум)', S.maxPar], ['Сотрудников за сессию', S.slots.length]);
-    const acts = Object.entries(S.acts).sort((a, b) => b[1] - a[1]);
-    set('mo-nums', nums.map(([k, v]) => `<li class="num"><span>${esc(k)}</span><b>${v}</b></li>`).join('')
-      + (acts.length ? `<li><span class="mute">Действий:</span> ${acts.map(([k, v]) => `${who(k)} ${v}`).join(' · ')}</li>` : ''));
+    // строка статуса: решения — в чате, здесь только что происходит
+    const working = S.slots.filter((a) => a.status === 'running').length;
+    const wait = Object.values(S.leads).filter((l) => l.status === 'проверено').length;
+    const st = S.boss.status === 'waiting' ? 'Босс ждёт вас в чате' + (wait ? ` · писем ждут «одобряю»: ${wait}` : '')
+      : working ? `Офис работает — сотрудников за делом: ${working}` : S.boss.status === 'running' ? 'Офис работает' : !all.length ? '' : 'Тихо — напишите Боссу, что сделать';   // событий нет — говорит плашка над офисом
+    set('mo-status', st + (wait && S.boss.status !== 'waiting' ? ` · писем ждут вашего «одобряю»: ${wait}` : ''));
+    const el = document.getElementById('mo-status'); if (el) el.classList.toggle('you', S.boss.status === 'waiting');
+    renderBase();
   }
 
-  const say = (text, cls = '') => `<button type="button" class="mo-say ${cls}" data-say="${esc(text)}">${esc(text)}</button>`;
-  function copyText(text) {
-    const fallback = () => {
-      const t = document.createElement('textarea'); t.value = text; t.setAttribute('readonly', ''); t.style.position = 'fixed'; t.style.opacity = '0';
-      document.body.appendChild(t); t.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (_) {} t.remove(); return ok;
-    };
-    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text).then(() => true, fallback);
-    return Promise.resolve(fallback());
+  // Данные «Базы» (город, сайт, почему, контакт, письмо) — решения.js, хук переписывает его в конце хода
+  let D = null, decLoading = false;
+  const opened = {};
+  window.dec = (d) => { if (d && typeof d === 'object') D = d; };
+  function readDec() {
+    if (decLoading) return;
+    decLoading = true;
+    const el = document.createElement('script');
+    el.src = 'решения.js?t=' + Date.now();
+    el.onload = el.onerror = () => { el.remove(); decLoading = false; render(); };
+    document.head.appendChild(el);
   }
-  let toastTimer = 0;
-  function toast(msg) {
-    let el = document.getElementById('mo-toast');
-    if (!el) { el = document.createElement('div'); el.id = 'mo-toast'; document.body.appendChild(el); }
-    el.textContent = msg; el.style.display = 'block'; clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.style.display = 'none'; }, 2600);
+  // Markdown письма → текст: ссылка — её текст, заголовок — жирным
+  const md = (s) => esc(String(s || '').trim()).replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/^#+\s*(.+)$/gm, '<b>$1</b>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+  const plain = (s) => String(s || '').trim().replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)');
+  // Скачать для Excel: CSV с «;» и BOM — Excel открывает двойным щелчком с кириллицей
+  function csv() {
+    const q = (v) => '"' + String(v ?? '').replace(/"/g, '""').trim() + '"';
+    const head = ['Компания', 'Город', 'Сайт', 'Стадия', 'Почему подходит', 'Контакт', 'Тема', 'Письмо', 'Перевод'];
+    const lines = rows().map(([slug, l, d]) => [l.title, d['город'], d['сайт'], (STAGE[l.status] || [l.status])[0], d['почему'], mailOf(d) || d['контакт'], d['тема'], plain(d['письмо']), plain(d['перевод'])].map(q).join(';'));
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['\ufeff' + [head.map(q).join(';'), ...lines].join('\r\n')], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'компании.csv'; document.body.appendChild(a); a.click(); a.remove();
   }
   document.addEventListener('click', (e) => {
-    const b = e.target.closest && e.target.closest('[data-say]'); if (!b) return;
-    const text = b.dataset.say;
-    copyText(text).then((ok) => toast(ok ? `«${text}» скопировано — вставьте в чат Боссу` : `Скопируйте вручную: ${text}`));
+    const t = e.target.closest && e.target.closest('[data-letter],[data-view],#mo-csv');
+    if (!t) return;
+    if (t.id === 'mo-csv') return csv();
+    if (t.dataset.view) return showView(t.dataset.view);
+    opened[t.dataset.letter] = !opened[t.dataset.letter]; render();
   });
-  // шпаргалка: те же группы, что у Босса; фразы с «…» копируются как есть
-  const HELP = [['Работа', ['найди 5 компаний', 'что в работе?', 'почему …?', 'пропусти …']],
-    ['Письма', ['покажи письмо …', 'поправь …: …', 'одобряю …', 'одобряю все', 'отправил …', 'ответ от …: …']],
-    ['Настройки', ['настрой заново', 'покажи офис', 'помощь']]];
-  function renderHelp() {
-    set('mo-help-body', HELP.map(([g, list]) => `<h4>${esc(g)}</h4>` + list.map((x) => say(x)).join('')).join('')
-      + '<div class="mute" style="margin-top:6px;font-size:12px">Кнопка копирует фразу — вставьте её в чат Боссу и допишите, где «…».</div>');
-  }
 
-  // Вкладки (узкий экран) и место «Команды»: под офисом слева или вкладкой
-  const TABS = ['board', 'flow', 'team', 'nums', 'help'];
-  let tab = 'board';
-  try { const t = localStorage.getItem('myoffice.tab'); if (TABS.includes(t)) tab = t; } catch (_) {}
-  function showTab(t) {
-    tab = t; document.body.dataset.motab = t;
-    document.querySelectorAll('#mo-tabs [data-tab]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
+  // Вкладки «Офис» и «База»; выбор помнится
+  let view = 'office';
+  try { if (localStorage.getItem('myoffice.view') === 'base') view = 'base'; } catch (_) {}
+  function showView(v) {
+    view = v; document.body.dataset.moview = v;
+    document.querySelectorAll('#mo-view [data-view]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.view === v)));
+    try { localStorage.setItem('myoffice.view', v); } catch (_) {}
+    if (v === 'office') window.dispatchEvent(new Event('resize'));   // офис был скрыт — пересчитать размер
   }
-  let placedWide = null;
-  function place(wide) {
-    const team = document.getElementById('mo-team'), left = document.getElementById('mo-left'), mo = document.getElementById('mo');
-    if (!team || !left || !mo || placedWide === wide) return;
-    placedWide = wide;
-    if (wide) left.appendChild(team); else mo.appendChild(team);
-    const hd = document.getElementById('mo-help'); if (hd) hd.open = !wide;   // в широком — свёрнут
-    renderHelp();
-    if (!document.body.dataset.motab) {
-      showTab(tab);
-      document.getElementById('mo-tabs').addEventListener('click', (e) => {
-        const b = e.target.closest('[data-tab]'); if (!b) return;
-        showTab(b.dataset.tab); try { localStorage.setItem('myoffice.tab', b.dataset.tab); } catch (_) {}
-      });
-    }
-    render();
-  }
+  let placed = false;
+  function place() { if (placed) return; placed = true; showView(view); render(); }
 
   window.MO = { snapshot, place, teamRow, linkText, empty: () => applied === 0, src: SRC, label: SRC === 'events.js' ? '' : 'демо: ' + SRC };
 
@@ -797,6 +830,7 @@
     </div>
   </header>
   <div id="banner"></div>
+  <nav id="mo-view"><button type="button" data-view="office">Офис</button><button type="button" data-view="base">База<span id="mo-base-n"></span></button><span id="mo-status"></span></nav>
   <div id="mo-layout">
   <div id="mo-left">
   <div id="main">
@@ -809,15 +843,11 @@
     <div id="zoomui" hidden><button type="button" data-z="in" aria-label="+">+</button><button type="button" data-z="out" aria-label="−">−</button><button type="button" data-z="reset" aria-label="1:1">⟲</button></div>
   </div>
   </div>
-  <div class="mo-p" id="mo-team" data-pane="team"><h3>Команда</h3><div id="cards"></div></div>
   </div>
-  <section id="mo">
-    <div class="mo-p" data-pane="wait"><h3>Ждёт вас</h3><ul id="mo-wait"></ul></div>
-    <nav id="mo-tabs"><button type="button" data-tab="board">Конвейер</button><button type="button" data-tab="flow">Ход работы</button><button type="button" data-tab="team">Команда</button><button type="button" data-tab="nums">Цифры</button><button type="button" data-tab="help">Как управлять</button></nav>
-    <div class="mo-p" data-pane="board"><h3>Конвейер</h3><div id="mo-board"></div></div>
-    <div class="mo-p" data-pane="flow"><h3>Ход работы</h3><ul id="mo-flow"></ul></div>
-    <div class="mo-p" data-pane="nums"><h3>Цифры</h3><ul id="mo-nums"></ul></div>
-    <div class="mo-p" data-pane="help"><details id="mo-help"><summary>Как управлять</summary><div id="mo-help-body"></div></details></div>
+  <section id="mo" class="mo-p">
+    <div class="mo-base-head"><span id="mo-base-sum"></span><button type="button" class="mo-btn" id="mo-csv">Скачать для Excel</button></div>
+    <div id="mo-base-table"></div>
+    <div id="cards"></div>
   </section>
   </div>
   <div id="news" hidden></div>
@@ -947,666 +977,12 @@
       demo: 'Demo mode — fake agents. Remove <code>?demo</code> from the URL to watch your own Paperclip company.',
       hosted: 'This is the hosted demo with fake agents. To watch your own agents, run <code>npx @caglarutkuguler/cubicle</code> and open <code>http://127.0.0.1:3200</code>, or install it as a Paperclip plugin.',
     },
-    tr: {
-      tgAccess: "Botu kimler kullanabilir?",
-      tgAllowEveryone: "Herkese izin ver",
-      tgAllowEveryoneHint: "Eşleştirme kodunu bilen herkes, mevcut düzende olduğu gibi sohbetini bağlayabilir.",
-      tgRestrictedHint: "Yalnızca listedeki kişiler özel sohbette eşleşebilir, komut kullanabilir ve bildirim alabilir. Değişiklikler hemen uygulanır.",
-      tgUserId: "Telegram kullanıcı kimliği",
-      tgAddUser: "Ekle",
-      tgRemoveUser: "Kaldır",
-      tgNoUsers: "Liste boş. Hiç kimse botu kullanamaz veya bildirim alamaz.",
-      tgLinkedUsers: "Daha önce bağlanan kişiler",
-      tgUserInvalid: "Telegram’ın sayısal kullanıcı kimliğini girin; @kullanıcıadı kullanmayın.",
-      tgAccessFailed: "Erişim ayarları kaydedilemedi. Lütfen yeniden deneyin.",
-      connecting: 'Bağlanılıyor…', unreachable: "Paperclip'e ulaşılamıyor, yeniden deneniyor…",
-      denied: (c) => `Paperclip erişimi reddetti (${c}). Kimlik doğrulamalı Paperclip için PAPERCLIP_TOKEN tanımlayın veya anahtarı kontrol edin.`, feedUnreachable: 'Ajan verisi okunamıyor, yeniden deneniyor…',
-      empty: 'Henüz ajan yok.', emptyClaude: 'Henüz Claude Code oturumu yok. Herhangi bir klasörde <code>claude</code> başlatın, ofise girecek.',
-      noCompany: 'Henüz şirket yok.', summary: (n, r) => `${n} ajan · ${r} çalışıyor`,
-      running: 'çalışıyor', idle: 'boşta', error: 'hata', paused: 'duraklatıldı', waiting: 'sizi bekliyor', noTask: 'atanmış açık görev yok',
-      done: '✓ bitirdi', errBubble: '⚠ hata', waitBubble: '✋ sizi bekliyor',
-      asks: 'cevabınızı bekliyor:', needYou: (n) => `${n} sizi bekliyor`, redacted: '🔒 ayrıntılar gizli',
-      settings: 'Ayarlar', theme: 'Tema', copyLink: 'Bu ayarlarla link kopyala', copied: 'Kopyalandı ✓',
-      settingsNote: 'Bu tarayıcıda saklanır. Link, ayarları başka bir ekrana taşır (TV için ?kiosk ekleyin).',
-      spend: (a, b) => `bu ay ${a} / ${b}`, spendNoBudget: (a) => `bu ay ${a}`, spendTitle: 'Paperclip’in bildirdiği bu ayki harcama',
-      handoff: (id, to) => `${id} → ${to}`, replay: 'tekrar',
-      notify: 'Bir ajan beni beklediğinde masaüstü bildirimi', notifyBlocked: 'Bu sayfa için bildirimler tarayıcı ayarlarında engellenmiş.',
-      sound: 'Ses', soundOff: 'Kapalı', soundNeed: 'Bir ajan beni beklediğinde', soundAll: 'Bekleyen, biten ve hata',
-      fps: 'Kare hızı', fpsAuto: 'Otomatik', fps30: '30 fps (daha hafif)', fps15: '15 fps (en hafif)',
-      layout: 'Yerleşim', layoutAuto: 'Otomatik (sayfaya sığdır)', layoutSide: 'Ofis ve kartlar yan yana', layoutStack: 'Kartlar ofisin altında',
-      openPaperclip: 'Paperclip’i kendi sekmesinde aç', kpiTitle: 'Verdiğiniz görevlerin ilerlemesi', kpi: 'Verdiğiniz görevler', kpiOpen: 'Açık', kpiAvg: 'Ortalama ilerleme', kpiDone7: '7 günde biten', kpiLead: 'Tipik bitirme süresi', kpiBlocked: 'Başka görevi bekleyen',
-      waitsOn1: (id) => `başka bir görevi bekliyor (${id})`, waitsOnN: (n, id) => `${n} görevin bitmesini bekliyor (${id}…)`, waitsSubs: (n) => `${n} alt görevin bitmesini bekliyor`, waitsYou: 'sizi bekliyor', stalled: (n) => `${n} tanesi takıldı`,
-      sView: 'Görünüm', sAlerts: 'Uyarılar', sMore: 'Diğer', sCopy: 'Link kopyala', sLogo: 'Logo…', sNoLogo: 'Logoyu kaldır', sExport: 'Dışa aktar', sImport: 'İçe aktar…', sRecord: '30 sn video', sPets: "Evcil hayvan", petsNote: "Ofiste dolaşan hayvanlar. Selam vermek için üstüne tıklayın.", petName: {"cat": "Kedi", "dog": "Köpek", "rabbit": "Tavşan", "robot": "Robot süpürge"}, petSay: {"cat": "Miyav!", "dog": "Hav hav!", "rabbit": "♥", "robot": "Bip bop"}, sVoice: 'Seslendirme (ajanlar konuşsun)', voiceNote: 'Tarayıcı olanları her ajanın kendi sesiyle okur. Ücretsizdir, tarayıcıda yerleşiktir; Cubicle hiçbir yere bir şey göndermez. Bazı tarayıcılar önce sayfaya bir kez tıklanmasını ister.', voiceKinds: { wait: 'Bekleyenler', start: 'İşe başlayanlar', done: 'İşi bitenler', err: 'Hatalar', chat: 'Sohbetler' }, voicePick: 'Konuşan ses', voiceAuto: 'Otomatik (her ajana bir ses)', voiceNone: 'Bu tarayıcıda Türkçe ses yok. Edge’de doğal Türkçe sesler var; Windows’ta Türkçe dil paketi de bir ses ekler.', voiceOn: 'Seslendirme açık.',
-      say: { wait: (n, w) => `${n} sizi bekliyor${w ? ': ' + w : ''}.`, start: (n, w) => `${n} işe başladı${w ? ': ' + w : ''}.`, done: (n, w) => `${n} işini bitirdi${w ? ': ' + w : ''}.`, err: (n, w) => `${n} hata aldı${w ? ': ' + w : ''}.` },
-      voiceSex: "Ses", voiceSexAuto: "Görünüşe göre", female: "Kadın", male: "Erkek", voiceSexMode: "Kadın / erkek", voiceSexLook: "Ofisteki görünüşe göre", voiceSexMix: "Karışık (bir kadın, bir erkek)", voiceSexF: "Herkes kadın sesiyle", voiceSexM: "Herkes erkek sesiyle", voiceF: "Kadın sesi", voiceM: "Erkek sesi", voiceNoF: "Bu tarayıcıda Türkçe kadın sesi yok; kadın ajanlar da aynı sesle konuşur (bazı tarayıcılar sesi inceltir, Windows’taki Chrome inceltmez). Microsoft Edge’de doğal kadın sesi var (Emel).", openEdge: "Edge’de aç", voiceNoM: "Bu tarayıcıda Türkçe erkek sesi yok; erkek ajanlar kadın sesinin kalınlaştırılmış hâliyle konuşur. Microsoft Edge’de doğal erkek sesi var (Ahmet).", voiceTry: "Dene", voiceTryF: "Merhaba, ben kadın sesiyim.", voiceTryM: "Merhaba, ben erkek sesiyim.", sHuman: 'İnsan masası', sNotify: 'Masaüstü bildirimi',
-      tgButton: '📨 Telegram…', tgIntro: 'Bir ajan sizi beklediğinde ya da bir çalıştırma hata verdiğinde telefonunuza ajan ve iş bağlantılarıyla mesaj gelir; ofisin durumunu da oradan sorabilirsiniz.',
-      tgCommands: 'Komutlar: /status, /waiting, /kpi, /office, /answer ID metin, /mute ad, /alerts all|questions|failures',
-      tg1: 'Bot oluşturun', tg1Text: 'Telegram’da @BotFather’ı açın, My Bots menüsüne girip “Create a New Bot” düğmesine basın. Bota bir ad ve sonu “bot” ile biten bir kullanıcı adı verin. BotFather size 123456789:AAH… gibi uzun bir satır (token) gönderir; onu kopyalayın.',
-      tg2: 'Token’ı buraya yapıştırın', tgTokenPh: 'örn. 123456789:AAH…', tgSave: 'Kaydet', tgSaving: 'Kontrol ediliyor…', tgBad: { format: 'Bu bir bot token’ına benzemiyor. BotFather’ın gönderdiği satırın tamamını kopyalayın.', refused: 'Telegram bu token’ı kabul etmedi. BotFather’dan yeniden kopyalayın.', unreachable: 'Bu bilgisayardan Telegram’a ulaşılamadı. İnternet bağlantısını kontrol edin.', url: 'Bu bir web adresi değil; http:// ya da https:// ile başlamalı.' },
-      tgBotOk: (u) => `✓ ${u} bağlandı`, tgRemove: 'Bağlantıyı kaldır', tgFromEnv: 'Token sunucu ortamında tanımlı.',
-      tg3: 'Telegram’ınızı bağlayın', tg3Text: 'Telefonunuzun kamerasıyla kodu okutun ya da düğmelerden birine basın. Bot Telegram’da açılınca “Başlat”a (Start) basın.', tgOpenBot: 'Bu bilgisayardaki Telegram uygulaması', tgLinked: (n) => `✓ ${n} sohbet bağlı`, tgWaitStart: 'Telegram’da “Başlat”a basmanız bekleniyor…',
-      tg4: 'İsteğe bağlı: Telegram’dan yanıt', tgRepliesLabel: 'Mesajı yanıtlayarak cevap verebileyim; yanıtım Paperclip’teki işe yorum olarak yazılsın',
-      tgLocal: 'Kurulum yalnızca Cubicle’ın çalıştığı bilgisayardan yapılabilir.', tgPhone: 'Bağlantılar bu bilgisayarda açılır; telefonda açılması için 5. adıma bakın.',
-      tgOpenWeb: 'Telegram Web', tgScan: 'Telefonla okutun', tgOrSend: '“Başlat” bir şey yapmazsa bota şu mesajı gönderin:', tgCopy: 'Kopyala', tgCopied: 'Kopyalandı',
-      tgNoApp: 't.me sayfasındaki “Start Bot” düğmesi yalnızca bu bilgisayarda Telegram uygulaması kuruluysa çalışır. Değilse telefonu ya da Telegram Web’i kullanın.',
-      tgWrong: 'Bot bir mesaj aldı ama doğru kod yoktu. Yukarıdaki mesajı gönderin.', tgPoll: { conflict: 'Bu botu başka bir program da okuyor (Paperclip’in kendi Telegram bağlantısı olabilir). Cubicle’a ayrı bir bot verin.', unreachable: 'Bu bilgisayardan Telegram’a ulaşılamıyor. İnternet bağlantısını kontrol edin.', refused: 'Telegram anahtarı reddetti. Bağlantıyı kesip yeniden yapıştırın.' },
-      tg5: 'İsteğe bağlı: bağlantılar telefonda da açılsın', tg5Text: 'Mesajlardaki bağlantılar şu an yalnızca bu bilgisayarda açılır. Telefonda da açılması için Cubicle ücretsiz Tailscale’i kullanır; ofis yalnızca sizin cihazlarınızda açılır.',
-      ts1: 'Bu bilgisayarda: tailscale.com/download sayfasından Tailscale’i indirip kurun. Kurulumdan sonra bir giriş sayfası açılır; Google, Microsoft ya da Apple hesabınızla giriş yapın.', ts2: 'Telefonda: App Store’da ya da Google Play’de “Tailscale” aratıp yükleyin. Uygulamayı açın, bilgisayardakiyle aynı hesapla giriş yapın ve VPN izni sorulunca “İzin ver”e basın.', ts3: 'Bu pencereye dönüp “Yeniden kontrol et”e basın.',
-      tsDownload: 'Tailscale’i indir', tsCheck: 'Yeniden kontrol et', tsChecking: 'Kontrol ediliyor…', tsOff: 'Tailscale kurulu ama bağlı değil. Görev çubuğunda saatin yanındaki Tailscale simgesine tıklayıp giriş yapın ya da “Connect”e basın, sonra yeniden kontrol edin.',
-      tsOn: (d) => `✓ Tailscale bu bilgisayarda çalışıyor (${d}).`, tsServe: 'Ofisi telefonumda aç', tsServeNote: 'Ofisi yalnızca Tailscale hesabınıza bağlı cihazlar açabilir; ayarlar ve eşleme kodu bu bilgisayarda kalır.',
-      tsNoPhone: 'Tailscale hesabınızda henüz telefon görünmüyor: telefona Tailscale’i kurup aynı hesapla giriş yapın.', tsFail: 'Tailscale bunu kabul etmedi. Bu bilgisayarda bir kez şu komutu çalıştırın (PowerShell ya da Terminal):',
-      tsPhoneOn: 'Telefonda Tailscale uygulaması açık (bağlı) olmalı.', apBtn: 'Onayla / reddet', apWait: 'Onayınızı bekliyor', apShow: 'Onay isteğini göster', apAsks: (n) => `${n} onayınızı istiyor`, apRisks: 'Riskler', apOpen: 'Paperclip’te onayla ya da reddet', qShow: 'Soruyu göster', qAsks: (n) => `${n} size soruyor`, pcAway: 'Paperclip yalnızca çalıştığı bilgisayarda açılır. Buradan yanıt vermek için Telegram’daki ajan mesajını yanıtlayın.', tsManual: 'Ya da adresi kendiniz yazın',
-      tgPhonePh: 'ör. http://bilgisayarim.tail1234.ts.net:3200', tgPhoneOk: (u) => `✓ Bağlantılar ${u} adresinde açılır`, tgPhoneTry: 'Denemek için telefonda açın', tgPhoneFixed: 'Adres, Cubicle başlatılırken verildi (--public-url).', tgPhoneClear: 'Kaldır',
-      tgEmbed: 'Telegram botu, Paperclip içindeki ofise değil, bu bilgisayarda çalışan bağımsız Cubicle’a aittir. Onu açıp orada ⚙ → Telegram’a basın:', tgOpenStandalone: 'Cubicle’ı aç',
-      iss: { backlog: 'bekleme listesi', todo: 'yapılacak', in_progress: 'sürüyor', in_review: 'incelemede', blocked: 'engelli', done: 'bitti', cancelled: 'iptal' },
-      kpiTask: 'Görev', kpiWho: 'Ajan', kpiProgress: 'İlerleme', kpiEta: 'Tahmini bitiş', kpiSub: (d, n) => `${d}/${n} alt görev`, kpiOver: 'tipik süreyi aştı', kpiDone: 'bitti', kpiShowDone: 'Bitenleri göster', kpiRefresh: 'Yenile', kpiEmpty: 'Henüz bir kişinin verdiği görev yok.',
-      kpiStarted: 'Başlangıç', kpiTook: 'Süre', kpiRunningFor: (d) => `${d} · sürüyor`, kpiAllRoots: 'Ajanların açtığı görevler de', kpiExpand: 'Alt görevler', kpiAdvice: 'Nasıl hızlanır',
-      adTitle: (id) => `${id} nasıl hızlanır`, adLoading: 'Çalıştırmalar ve maliyetler okunuyor…', adNone: 'Öne çıkan bir sorun yok: sizi bekleyen, durmuş blokajı olan, tekrar eden hata ya da hareketsiz iş görünmüyor.',
-      adCost: (runs, time, cost) => `Toplam: ${runs} çalıştırma, ${time} ajan süresi, ${cost}.`, adFailShare: (p, n) => `Son ${n} çalıştırmada başarısızlık oranı %${p}.`,
-      adWaitsYou: (n, age) => `${n} iş sizin yanıtınızı ya da onayınızı bekliyor; en eskisi ${age} süredir`,
-      adWaitsYouFix: 'Siz karar vermeden ilerlemezler. Yanıtlayın; sık tekrar eden kararlar için ajana yetki ya da yazılı bir kural verin ki sormasın.',
-      adFailQuota: (n) => `${n} çalıştırma yapay zekâ sağlayıcısının kullanım sınırına takıldı`, adFailQuotaFix: 'Bu çalıştırmalar boşa gider ve sonra yeniden denenir. İşi güne yayın, aynı anda daha az ajan çalıştırın, kritik işleri öne alın ya da taşan iş için ikinci bir sağlayıcı/model ekleyin.',
-      adQuotaAll: (n, all) => `Şirket genelinde son ${all} çalıştırmanın ${n} tanesi yapay zekâ sağlayıcısının kullanım sınırına takıldı`, adFailBig: (n) => `${n} çalıştırma başlayamadı: istem çok büyük (E2BIG)`, adFailBigFix: 'Görev açıklamalarını ve uzun yorum zincirlerini kısaltın, uzun belgeleri yapıştırmak yerine bağlantı verin, ajanın talimat dosyalarını küçültün.',
-      adFailTurn: (n) => `${n} çalıştırma yarıda kesildi (terminal, sınır ya da servis hatası)`, adFailTurnFix: 'İşi daha küçük adımlara bölün, uzun komutları tek turda çalıştırmayın, ajanın süre ve çıktı sınırlarını kontrol edin.',
-      adFailLost: (n) => `${n} çalıştırmanın süreci kayboldu`, adFailLostFix: 'Bilgisayar ya da WSL iş sırasında uykuya geçti veya yeniden başladı. Ajanlar çalışırken bilgisayarı uyanık tutun.',
-      adFailOther: (n, code) => `${n} çalıştırma ${code} ile başarısız oldu`, adFailOtherFix: 'Nedeni görmek için bu çalıştırmalardan birini açın; aynı hata tekrar ediyorsa yeniden denemek değil bir ayarı değiştirmek gerekir.',
-      adStalled: (n, chain) => `${n} iş, kendisi de durmuş bir işi bekliyor: ${chain}`, adStalledFix: 'Zincirin ilk halkasını çözün: ona öncelik verin ya da başka ajana atayın; bağımlılık gerçekten gerekli mi bakın, bağımsız kısımları şimdi başlatın.',
-      adIdle: (n) => `${n} açık işte bir günden uzun süredir hareket yok`, adIdleFix: 'Ajanlarını uyandırın ya da işleri boştaki ajanlara verin.',
-      adUnassigned: (n) => `${n} açık işin ajanı yok`, adUnassignedFix: 'Bir ajan atayın; atanana kadar kimse üzerinde çalışmaz.',
-      adOverload: (name, n, free) => `${name} üzerinde ${n} açık iş var, ${free} ise boşta`, adOverloadFix: 'Bir kısmını boştaki ajanlara verin ya da aynı rolde ikinci bir ajan ekleyin.',
-      adLong: (ids, age, typ) => `${ids} açık; en uzunu ${age} süredir sürüyor, buradaki benzer işler ise yaklaşık ${typ} sürüyor`, adLongFix: 'Kabul kriterlerini somutlaştırın ve işi paralel yürüyebilecek daha küçük alt görevlere bölün.',
-      adChurn: (ids, n) => `${ids}: son günlerde en çok ${n} çalıştırma, hâlâ açık`, adChurnFix: 'Ajan döngüye girmiş olabilir: net bir bitiş koşulu ekleyin ve onu neyin sürekli uyandırdığına bakın (yorumlar, incelemeler).',
-      adReview: (n, age) => `${n} iş incelemede bekliyor; en eskisi ${age} süredir`, adReviewFix: 'İnceleyici ekleyin ya da inceleyicinin yükünü azaltın; düşük riskli değişiklikler inceleme adımına gerek duymayabilir.',
-      adDoneTask: (id, when) => `${id} tamamlandı (${when})`, adOpenTask: (id) => `${id} hâlâ açık`, adStill: 'Sorun verilerde hâlâ görünüyor.', adAgain: 'Yeniden göreve çevir', adEarlier: 'Önceki tavsiyeler', adGone: 'artık verilerde görünmüyor', adOutcome: 'Sonuç', etaAt: (t) => `tahmini bitiş ${t}`, etaSubs: (d, n, per) => `Alt görevlerinden: ${n} işin ${d} tanesi bitti${per ? `, şimdiye kadar her biri ortalama ${per}` : ', şimdiki hızla'}`, etaLike: (n, rem) => `Burada bu kadar süren işler yaklaşık ${rem} sonra bitti (${n} iş)`, etaRough: 'Burada bu kadar uzun süren iş az; kaba tahmin: açık kaldığı süre kadar daha', blk: { stalled: (o) => (o ? `takıldı: beklediği iş zinciri ${o} işinde kaldı` : 'takıldı; onu ilerletecek kimse yok'), unassigned: (o) => `${o || 'bir iş'} bekleniyor ama o işin sahibi yok`, backlog: (o) => `${o || 'bir iş'} bekleniyor ama o iş beklemede (backlog)`, uninvokable: (o) => `${o || 'bir iş'} bekleniyor ama o işin ajanı çalışamıyor`, cancelled: (o) => `${o || 'bir iş'} bekleniyor ama o iş iptal edildi`, review: (o) => `${o || 'bir iş'} incelemede ama inceleyen yok`, disposition: () => 'çalışma bitti ama sonrasına kimse karar vermedi', decision: () => 'kararınızı bekliyor', external: () => 'dışarıdan biri bekleniyor', recovery: (o) => `bir kurtarma işi açık${o ? ` (${o})` : ''}`, other: () => 'takıldı, birinin bakması gerekiyor' }, blkAsks: (n) => `${n} takıldı`, blkShow: 'Neden takıldı', blkLook: 'Engeli aç', blkMore: (n) => `${n} takılı iş daha`, blkSince: (d) => `${d} durdu`, blkHint: 'Açıp bir sonraki adımı ve kimin yapacağını yazın; yorum ajanı uyandırır.', blkBubble: '⛔ takıldı', blkPc: 'Paperclip’in önerisi', etaTitle: 'Bu ajanın biten görevlerinin ne kadar sürdüğüne ya da görevin alt görevlerine göre tahmin edilir', adDemoResult: 'Hareketsiz alt görevler boştaki bir ajana verildi; ikisi de bir saat içinde başladı.', ciShow: 'Bağlantı isteğini göster', ciAsks: (n, svc) => `${n} bir bağlantı istiyor: ${svc}`, ciBtn: 'Bağla', ciOpen: 'Paperclip’te bağla', ciNote: 'Bağlantı Paperclip’te kurulur (oturum açmak için kendi sekmesinde açılır); bağlanınca ajan kaldığı yerden devam eder.', adToTask: 'Göreve çevir', adAllToTask: 'Tümünü göreve çevir', adAssignee: 'Ajan', adPriority: 'Öncelik', adTaskTitle: 'Başlık', adCreate: 'Paperclip’te oluştur', adCreating: 'Oluşturuluyor…',
-      adCreated: (id) => `${id} oluşturuldu`, adOff: 'Tavsiyeyi göreve çevirme kapalı.', adTurnOn: 'Cubicle bu görevleri Paperclip’te açabilsin (yavaş görevin alt görevi olarak)', adOnlyHere: 'Cubicle’ın çalıştığı bilgisayardan açılır.',
-      adTaskName: (id, text) => `${id} hızlandırma: ${text}`, adTaskHead: 'Cubicle’dan hızlandırma tavsiyesi', adFor: 'Görev', adTaskFinding: 'Bulgu', adTaskFix: 'Tavsiye', adTaskWhere: 'İlgili işler',
-      adTaskSource: (d) => `Cubicle tarafından ${d} tarihinde Paperclip’teki görevler, son çalıştırmalar ve maliyetlerden çıkarıldı.`, adPrios: { critical: 'Kritik', high: 'Yüksek', medium: 'Orta', low: 'Düşük' },
-      kpiNote: 'Bir kişinin oluşturduğu görevler; ajanların birbirine açtıkları değil. İlerleme görevin alt görevlerinden, alt görev yoksa durumundan hesaplanır; tahmini bitiş şimdiye kadarki hıza ya da bu şirkette bir görevin genelde ne kadar sürdüğüne göre öngörülür.',
-      chat: 'Sohbet', chatTitle: (n) => `${n} ile sohbet`, chatNote: 'Paperclip’in Agent Chat özelliği: görev vermeden istediğinizi sorun. Kapalı olduğunu söylerse Paperclip → Instance settings → Experimental’dan açın.',
-      human: 'İnsan masası: sizi bekleyen ajanlar orada sıraya girer', you: 'Siz', queue: (n) => `${n} ajan sizi bekliyor`, myLook: 'Görünümüm',
-      language: 'Dil', languageAuto: 'Tarayıcı dili',
-      reply: 'Yanıtla', replyTitle: (n) => `${n} sizi bekliyor`, openInPaperclip: 'Paperclip’te aç ↗', replyNote: 'Yanıt Paperclip’in kendi sayfasından verilir; Cubicle salt okunur kalır.', close: 'Kapat', anim: 'Ofis animasyonu', cardsToggle: 'Ajan kartları', viewNote: 'Animasyon kapalıyken kartlar her ajanı masasında gösterir.',
-      openTask: 'İşi aç', openRun: 'Çalıştırma kaydını aç', looksName: 'Görünüm ve ad', lastFail: (a) => `Son çalıştırma başarısız · ${a}`, alias: 'Cubicle’daki adı', aliasHint: 'Bu ad yalnızca Cubicle’da görünür; Paperclip kendi adını korur.', renameInPaperclip: 'Paperclip’te yeniden adlandır ↗',
-      talk: {
-        doneA: (id) => `${id} işini az önce bitirdim.`, doneB: 'Eline sağlık. Zorlandın mı?', doneD: 'Güzel, panoda bir iş eksildi.',
-        doneC: ['Birkaç uç durum çıktı, testler yakaladı.', 'Pek değil, tanım netti.', 'İnceleme işin kendisinden uzun sürdü.'],
-        nextA: (n) => `Sırada ne var ${n}?`, nextB: (id, t) => `${id}: ${t}.`, nextC: 'Kolay gelsin. Yardım lazım olursa seslen.',
-        waitA: (n) => `${n} yönetimden yanıt bekliyor.`, waitB: (id) => (id ? `${id} için mi? Umarım biri hemen yanıtlar.` : 'Umarım biri hemen yanıtlar.'),
-        errA: (n) => `${n} hata aldı.`, errB: 'Yeniden dener. Olmazsa biri loglara bakar.',
-        busyA: (k) => `Şu an ${k} kişi işe gömülmüş durumda.`, busyB: 'O zaman tam kahve zamanı.',
-        roleA: (r) => `${r} tarafında işler nasıl?`, roleB: ['Yoğun ama iyi.', 'Bugün sakin, nihayet.', 'Yeni işi bekliyorum.'],
-      },
-      record: '30 saniyelik video kaydet', recording: (n) => `Kaydediliyor… ${n} sn`, recordSaved: 'Video kaydedildi ✓', recordUnsupported: 'Bu tarayıcı ofisi kaydedemiyor.',
-      logo: 'Şirket logosu', logoPick: 'Logo yükle…', logoRemove: 'Logoyu kaldır',
-      exportLooks: 'Görünümü dışa aktar', importLooks: 'Görünümü içe aktar…',
-      editLook: 'Görünümü değiştir', looks: 'Görünüm', photo: 'Fotoğraflı kafa', photoPick: 'Resim seç…',
-      photoHint: 'Yüz daireyi dolduracak şekilde resmi sürükleyerek taşıyın, tekerlek ya da kaydırıcıyla yakınlaştırın.', zoom: 'Yakınlaştır',
-      findFace: 'Yüzü bul', noFace: 'Yüz bulunamadı: daireyi elle yerleştirin.', photoRemove: 'Fotoğrafı kaldır',
-      hair: 'Saç', hairShort: 'Kısa', hairLong: 'Uzun', hairBun: 'Topuz', hairPony: 'At kuyruğu', hairCurly: 'Kıvırcık', hairBald: 'Kel',
-      hairColor: 'Saç rengi', skin: 'Ten', color: 'Renk', clothes: 'Kıyafet', trousers: 'Pantolon', skirt: 'Etek', shoes: 'Ayakkabı', flats: 'Düz', heels: 'Topuklu',
-      save: 'Kaydet', cancel: 'Vazgeç', resetLook: 'Varsayılana dön',
-      lookServer: 'Cubicle’ın çalıştığı makinede saklanır; bu ofisi gösteren her ekran aynı görünümü görür.', lookLocal: 'Bu tarayıcıda saklanır. Başka bir tarayıcıda kullanmak için dışa aktarın.',
-      lookDenied: 'Görünümü yalnızca Cubicle’ın çalıştığı makinedeki bir tarayıcı değiştirebilir. Şimdilik bu tarayıcıda saklandı.',
-      needsYouTitle: (n) => `${n} sizi bekliyor`,
-      lastSteps: 'Son adımlar', whatsNew: (v) => `Cubicle ${v} sürümüne güncellendi.`, whatsNewLink: 'Yenilikler', reloadNote: 'Cubicle güncellendi.', reloadBtn: 'Sayfayı yenile', upNew: (v, cur) => `⬆ Cubicle ${v} çıktı (sizdeki ${cur}).`, upHow: 'Güncellemek için:', upCopy: 'Kopyala', upCopied: 'Kopyalandı', upAuto: 'Birazdan kendiliğinden güncellenecek; sayfa da yenilenir.', upAutoHint: 'Cubicle’ı --auto-update ile başlatırsanız kendiliğinden güncellenir.', upNow: 'Şimdi güncelle', upBusy: 'Güncelleniyor…', upDone: 'Güncellendi; sayfa yenileniyor.', upErr: 'Buradan güncellenemedi. Bunun yerine şunu çalıştırın:', upFail: 'Buradan güncellenemedi (yönetici yetkisi gerekir). Paperclip’in çalıştığı yerde şunu çalıştırın:',
-      pairs: [['Merge ettin mi?', 'Önce testler. Her zaman önce testler.'], ['Kahve mi çay mı?', 'Tokenları akıtan hangisiyse.'], ['Build’i kim bozdu?', 'Ben değilim, moladaydım.'],
-        ['Yoğun gün mü?', 'Kırk araç çağrısı, sayıyorum.'], ['Yönetimden haber var mı?', 'Hâlâ bir onay bekliyorum.'], ['Masan güzelmiş.', 'Artık iki monitörü var!']],
-      chatter: ['☕', 'kahve molası', '…', 'hmm', 'sıradaki iş?'],
-      hint: 'Çalışan ajan masasına oturup yazar; boştaki ajan dinlenme alanında dolaşır. 4 saniyede bir yenilenir.',
-      demo: "Demo modu: sahte ajanlar. Kendi Paperclip şirketinizi izlemek için adresten <code>?demo</code> kısmını kaldırın.",
-      hosted: "Bu, sahte ajanlarla çalışan barındırılan demo. Kendi ajanlarınızı izlemek için <code>npx @caglarutkuguler/cubicle</code> çalıştırıp <code>http://127.0.0.1:3200</code> adresini açın ya da Paperclip eklentisi olarak kurun.",
-    },
-    de: {
-      tgAccess: "Wer darf den Bot nutzen?",
-      tgAllowEveryone: "Alle zulassen",
-      tgAllowEveryoneHint: "Wie bisher kann jeder mit dem Kopplungscode einen Chat verknüpfen.",
-      tgRestrictedHint: "Nur aufgeführte Nutzer können sich in privaten Chats verknüpfen, Befehle nutzen und Benachrichtigungen erhalten. Änderungen gelten sofort.",
-      tgUserId: "Telegram-Nutzer-ID",
-      tgAddUser: "Hinzufügen",
-      tgRemoveUser: "Entfernen",
-      tgNoUsers: "Die Liste ist leer. Niemand kann den Bot nutzen oder Benachrichtigungen erhalten.",
-      tgLinkedUsers: "Zuvor verknüpfte Nutzer",
-      tgUserInvalid: "Geben Sie eine positive numerische Telegram-Nutzer-ID ein, keinen @Nutzernamen.",
-      tgAccessFailed: "Die Zugriffseinstellungen konnten nicht gespeichert werden. Bitte erneut versuchen.",
-      connecting: 'Verbinde…', unreachable: 'Paperclip nicht erreichbar, neuer Versuch…',
-      denied: (c) => `Paperclip hat den Zugriff verweigert (${c}). Für ein Paperclip mit Anmeldung PAPERCLIP_TOKEN setzen oder den Schlüssel prüfen.`, feedUnreachable: 'Agenten-Feed nicht lesbar, neuer Versuch…',
-      empty: 'Noch keine Agenten.', emptyClaude: 'Noch keine Claude-Code-Sitzungen. Starte <code>claude</code> in einem beliebigen Ordner, dann kommt sie herein.',
-      noCompany: 'Noch keine Firma.', summary: (n, r) => `${n} Agenten · ${r} arbeiten`,
-      running: 'arbeitet', idle: 'frei', error: 'Fehler', paused: 'pausiert', waiting: 'braucht dich', noTask: 'keine offene Aufgabe zugewiesen',
-      done: '✓ fertig', errBubble: '⚠ Fehler', waitBubble: '✋ braucht dich',
-      asks: 'wartet auf deine Antwort zu', needYou: (n) => `${n} ${n === 1 ? 'braucht' : 'brauchen'} dich`, redacted: '🔒 Details verborgen',
-      settings: 'Einstellungen', theme: 'Thema', copyLink: 'Link mit diesen Einstellungen kopieren', copied: 'Kopiert ✓',
-      settingsNote: 'In diesem Browser gespeichert. Der Link nimmt sie auf einen anderen Bildschirm mit (für einen Fernseher ?kiosk anhängen).',
-      spend: (a, b) => `${a} / ${b} diesen Monat`, spendNoBudget: (a) => `${a} diesen Monat`, spendTitle: 'Ausgaben diesen Monat, laut Paperclip',
-      handoff: (id, to) => `${id} → ${to}`, replay: 'Wiedergabe',
-      notify: 'Desktop-Benachrichtigung, wenn ein Agent mich braucht', notifyBlocked: 'Benachrichtigungen sind für diese Seite in den Browser-Einstellungen blockiert.',
-      sound: 'Ton', soundOff: 'Aus', soundNeed: 'Wenn ein Agent mich braucht', soundAll: 'Braucht mich, fertig und Fehler',
-      fps: 'Bildrate', fpsAuto: 'Automatisch', fps30: '30 fps (leichter)', fps15: '15 fps (am leichtesten)',
-      layout: 'Anordnung', layoutAuto: 'Automatisch (an die Seite anpassen)', layoutSide: 'Büro und Karten nebeneinander', layoutStack: 'Karten unter dem Büro',
-      openPaperclip: 'Paperclip in eigenem Tab öffnen', kpiTitle: 'Fortschritt Ihrer Aufgaben', kpi: 'Ihre Aufgaben', kpiOpen: 'Offen', kpiAvg: 'Durchschnittlicher Fortschritt', kpiDone7: 'In 7 Tagen erledigt', kpiLead: 'Übliche Dauer', kpiBlocked: 'Wartet auf andere Aufgaben',
-      waitsOn1: (id) => `wartet auf ${id}`, waitsOnN: (n, id) => `wartet auf ${n} Aufgaben (${id} …)`, waitsSubs: (n) => `wartet auf ${n} Teilaufgaben`, waitsYou: 'wartet auf Sie', stalled: (n) => `${n} hängen`,
-      sView: 'Ansicht', sAlerts: 'Hinweise', sMore: 'Mehr', sCopy: 'Link kopieren', sLogo: 'Logo…', sNoLogo: 'Logo entfernen', sExport: 'Exportieren', sImport: 'Importieren…', sRecord: '30-s-Video', sPets: "Haustiere", petsNote: "Tiere, die durchs Büro streifen. Zum Begrüßen anklicken.", petName: {"cat": "Katze", "dog": "Hund", "rabbit": "Kaninchen", "robot": "Saugroboter"}, petSay: {"cat": "Miau!", "dog": "Wuff!", "rabbit": "♥", "robot": "Piep piep"}, sVoice: 'Sprachausgabe (Agenten sprechen)', voiceNote: 'Der Browser liest vor, was passiert, mit eigener Stimme pro Agent. Kostenlos und im Browser eingebaut; Cubicle sendet nichts. Manche Browser brauchen erst einen Klick auf die Seite.', voiceKinds: { wait: 'Braucht mich', start: 'Beginnt', done: 'Fertig', err: 'Fehler', chat: 'Gespräche' }, voicePick: 'Stimme', voiceAuto: 'Automatisch (eine pro Agent)', voiceNone: 'Dieser Browser hat keine Stimme für diese Sprache. Edge hat natürliche Stimmen; unter Windows fügt ein Sprachpaket eine hinzu.', voiceOn: 'Sprachausgabe ist an.',
-      say: { wait: (n, w) => `${n} braucht dich${w ? ': ' + w : ''}.`, start: (n, w) => `${n} beginnt mit der Arbeit${w ? ': ' + w : ''}.`, done: (n, w) => `${n} ist fertig${w ? ': ' + w : ''}.`, err: (n, w) => `${n} hat einen Fehler${w ? ': ' + w : ''}.` },
-      voiceSex: "Stimme", voiceSexAuto: "Wie gezeichnet", female: "Weiblich", male: "Männlich", voiceSexMode: "Frauen / Männer", voiceSexLook: "Wie das Büro sie zeigt", voiceSexMix: "Gemischt (abwechselnd)", voiceSexF: "Alle mit Frauenstimme", voiceSexM: "Alle mit Männerstimme", voiceF: "Frauenstimme", voiceM: "Männerstimme", voiceNoF: "Dieser Browser hat keine Frauenstimme für diese Sprache; Frauen sprechen mit derselben Stimme (manche Browser heben die Tonhöhe, Chrome unter Windows nicht). Microsoft Edge hat natürliche Frauenstimmen.", openEdge: "In Edge öffnen", voiceNoM: "Dieser Browser hat keine Männerstimme für diese Sprache; Männer sprechen mit der tiefer gestellten Frauenstimme. Microsoft Edge hat natürliche Männerstimmen.", voiceTry: "Testen", voiceTryF: "Hallo, das ist eine Frauenstimme.", voiceTryM: "Hallo, das ist eine Männerstimme.", sHuman: 'Ihr Schreibtisch', sNotify: 'Desktop-Benachrichtigung',
-      tgButton: '📨 Telegram…', tgIntro: 'Eine Nachricht aufs Handy, wenn ein Agent Sie braucht oder ein Lauf fehlschlägt, mit Links zum Agenten und zur Aufgabe; und fragen Sie das Büro, wie es läuft.',
-      tgCommands: 'Befehle: /status, /waiting, /kpi, /office, /answer ID Text, /mute Name, /alerts all|questions|failures',
-      tg1: 'Bot anlegen', tg1Text: 'Öffnen Sie in Telegram @BotFather, gehen Sie zu „My Bots“ und drücken Sie „Create a New Bot“. Geben Sie einen Namen und einen Benutzernamen, der auf „bot“ endet. BotFather schickt Ihnen ein Token, eine lange Zeile wie 123456789:AAH…; kopieren Sie es.',
-      tg2: 'Token hier einfügen', tgTokenPh: 'z. B. 123456789:AAH…', tgSave: 'Speichern', tgSaving: 'Wird geprüft…', tgBad: { format: 'Das sieht nicht wie ein Bot-Token aus. Kopieren Sie die ganze Zeile von BotFather.', refused: 'Telegram hat dieses Token abgelehnt. Kopieren Sie es erneut von BotFather.', unreachable: 'Telegram ist von diesem Rechner aus nicht erreichbar. Prüfen Sie die Internetverbindung.', url: 'Das ist keine Webadresse; sie sollte mit http:// oder https:// beginnen.' },
-      tgBotOk: (u) => `✓ Verbunden mit ${u}`, tgRemove: 'Trennen', tgFromEnv: 'Das Token ist in der Serverumgebung gesetzt.',
-      tg3: 'Ihr Telegram verknüpfen', tg3Text: 'Scannen Sie den Code mit der Handykamera oder nutzen Sie einen der Knöpfe. Wenn sich Ihr Bot in Telegram öffnet, drücken Sie „Start“.', tgOpenBot: 'Telegram-App auf diesem Rechner', tgLinked: (n) => `✓ ${n} Chat(s) verknüpft`, tgWaitStart: 'Warte darauf, dass Sie in Telegram „Start“ drücken…',
-      tg4: 'Optional: aus Telegram antworten', tgRepliesLabel: 'Ich möchte per Antwort auf eine Nachricht antworten; die Antwort wird als Kommentar an die Paperclip-Aufgabe geschrieben',
-      tgLocal: 'Die Einrichtung geht nur auf dem Rechner, auf dem Cubicle läuft.', tgPhone: 'Die Links öffnen sich auf diesem Rechner; für das Handy siehe Schritt 5.',
-      tgOpenWeb: 'Telegram Web', tgScan: 'Mit dem Handy scannen', tgOrSend: 'Wenn „Start“ nichts tut, schicken Sie dem Bot diese Nachricht:', tgCopy: 'Kopieren', tgCopied: 'Kopiert',
-      tgNoApp: 'Der Knopf „Start Bot“ auf der t.me-Seite funktioniert nur, wenn die Telegram-App auf diesem Rechner installiert ist. Sonst nehmen Sie das Handy oder Telegram Web.',
-      tgWrong: 'Der Bot hat eine Nachricht bekommen, aber ohne den richtigen Code. Schicken Sie die Nachricht oben.', tgPoll: { conflict: 'Ein anderes Programm liest diesen Bot (die eigene Telegram-Verbindung von Paperclip?). Geben Sie Cubicle einen eigenen Bot.', unreachable: 'Telegram ist von diesem Rechner aus nicht erreichbar. Prüfen Sie die Internetverbindung.', refused: 'Telegram hat den Token abgelehnt. Trennen und neu einfügen.' },
-      tg5: 'Optional: Links auf dem Handy öffnen', tg5Text: 'Im Moment öffnen sich die Links in den Nachrichten nur auf diesem Rechner. Für das Handy nutzt Cubicle Tailscale (kostenlos): das Büro öffnet sich dann nur auf Ihren eigenen Geräten.',
-      ts1: 'Auf diesem Rechner: Tailscale von tailscale.com/download laden und installieren. Danach öffnet sich eine Anmeldeseite; mit dem Google-, Microsoft- oder Apple-Konto anmelden.', ts2: 'Auf dem Handy: im App Store oder bei Google Play „Tailscale“ suchen und installieren. Öffnen, mit demselben Konto wie am Rechner anmelden und das VPN erlauben.', ts3: 'Hierher zurückkommen und „Erneut prüfen“ drücken.',
-      tsDownload: 'Tailscale laden', tsCheck: 'Erneut prüfen', tsChecking: 'Wird geprüft…', tsOff: 'Tailscale ist installiert, aber nicht verbunden. Auf das Tailscale-Symbol in der Taskleiste (bei der Uhr) klicken und anmelden oder „Connect“ drücken, dann erneut prüfen.',
-      tsOn: (d) => `✓ Tailscale läuft auf diesem Rechner (${d}).`, tsServe: 'Büro auf meinem Handy öffnen', tsServeNote: 'Nur Geräte in Ihrem Tailscale-Konto können es öffnen; Einstellungen und Code bleiben auf diesem Rechner.',
-      tsNoPhone: 'Noch kein Handy in Ihrem Tailscale-Konto: Tailscale auf dem Handy installieren und mit demselben Konto anmelden.', tsFail: 'Tailscale hat es nicht angenommen. Einmal auf diesem Rechner ausführen (PowerShell oder Terminal):',
-      tsPhoneOn: 'Auf dem Handy muss die Tailscale-App eingeschaltet (verbunden) sein.', apBtn: 'Freigeben / ablehnen', apWait: 'Wartet auf Ihre Freigabe', apShow: 'Freigabeanfrage anzeigen', apAsks: (n) => `${n} bittet um Ihre Freigabe`, apRisks: 'Risiken', apOpen: 'In Paperclip freigeben oder ablehnen', qShow: 'Frage anzeigen', qAsks: (n) => `${n} fragt Sie`, pcAway: 'Paperclip öffnet sich nur auf dem Rechner, auf dem es läuft. Um von hier zu antworten, antworten Sie in Telegram auf die Nachricht des Agenten.', tsManual: 'Oder eine Adresse selbst eintragen',
-      tgPhonePh: 'z. B. http://mein-pc.tail1234.ts.net:3200', tgPhoneOk: (u) => `✓ Links öffnen sich unter ${u}`, tgPhoneTry: 'Zum Testen auf dem Handy öffnen', tgPhoneFixed: 'Die Adresse wurde beim Start angegeben (--public-url).', tgPhoneClear: 'Entfernen',
-      tgEmbed: 'Der Telegram-Bot gehört zum eigenständigen Cubicle auf diesem Rechner, nicht zum Büro in Paperclip. Öffnen Sie es und drücken Sie dort ⚙ → Telegram:', tgOpenStandalone: 'Cubicle öffnen',
-      iss: { backlog: 'Backlog', todo: 'offen', in_progress: 'in Arbeit', in_review: 'im Review', blocked: 'blockiert', done: 'erledigt', cancelled: 'abgebrochen' },
-      kpiTask: 'Aufgabe', kpiWho: 'Agent', kpiProgress: 'Fortschritt', kpiEta: 'Voraussichtlich', kpiSub: (d, n) => `${d}/${n} Teilaufgaben`, kpiOver: 'über der üblichen Dauer', kpiDone: 'erledigt', kpiShowDone: 'Erledigte zeigen', kpiRefresh: 'Aktualisieren', kpiEmpty: 'Noch keine Aufgaben von Menschen.',
-      kpiStarted: 'Begonnen', kpiTook: 'Dauer', kpiRunningFor: (d) => `seit ${d}`, kpiAllRoots: 'Auch Aufgaben von Agenten', kpiExpand: 'Teilaufgaben', kpiAdvice: 'So geht es schneller',
-      adTitle: (id) => `So wird ${id} schneller`, adLoading: 'Läufe und Kosten werden gelesen…', adNone: 'Nichts fällt auf: keine Wartezeit auf Sie, keine stehenden Blocker, keine wiederholten Fehler, keine liegende Arbeit.',
-      adCost: (runs, time, cost) => `Insgesamt: ${runs} Läufe, ${time} Agentenzeit, ${cost}.`, adFailShare: (p, n) => `${p} % der letzten ${n} Läufe sind fehlgeschlagen.`,
-      adWaitsYou: (n, age) => `${n} Aufgabe(n) warten auf Ihre Antwort oder Freigabe, die älteste seit ${age}`,
-      adWaitsYouFix: 'Ohne Ihre Entscheidung geht nichts weiter. Antworten Sie; für wiederkehrende Entscheidungen geben Sie dem Agenten die Befugnis oder eine schriftliche Regel.',
-      adFailQuota: (n) => `${n} Läufe stoppten am Nutzungslimit des KI-Anbieters`, adFailQuotaFix: 'Diese Läufe sind verloren und werden später wiederholt. Verteilen Sie die Arbeit über den Tag, lassen Sie weniger Agenten gleichzeitig laufen, ziehen Sie kritische Aufgaben vor oder fügen Sie einen zweiten Anbieter oder ein zweites Modell hinzu.',
-      adQuotaAll: (n, all) => `Firmenweit stoppten ${n} der letzten ${all} Läufe am Nutzungslimit des KI-Anbieters`, adFailBig: (n) => `${n} Läufe konnten nicht starten: Prompt zu groß (E2BIG)`, adFailBigFix: 'Kürzen Sie Beschreibungen und lange Kommentarverläufe, verlinken Sie lange Dokumente statt sie einzufügen, und kürzen Sie die Anweisungsdateien des Agenten.',
-      adFailTurn: (n) => `${n} Läufe brachen mitten im Zug ab (Terminal-, Limit- oder Dienstfehler)`, adFailTurnFix: 'Teilen Sie die Arbeit in kleinere Schritte, vermeiden Sie lange Befehle in einem Zug und prüfen Sie die Zeit- und Ausgabelimits des Agenten.',
-      adFailLost: (n) => `${n} Läufe verloren ihren Prozess`, adFailLostFix: 'Der Rechner oder WSL schlief ein oder startete neu. Halten Sie ihn wach, solange Agenten arbeiten.',
-      adFailOther: (n, code) => `${n} Läufe scheiterten mit ${code}`, adFailOtherFix: 'Öffnen Sie einen dieser Läufe für die Ursache; derselbe Fehler braucht eine geänderte Einstellung, keinen weiteren Versuch.',
-      adStalled: (n, chain) => `${n} Aufgabe(n) warten auf Arbeit, die selbst steht: ${chain}`, adStalledFix: 'Lösen Sie das erste Glied: Priorität geben oder einem anderen Agenten zuweisen; prüfen Sie, ob die Abhängigkeit nötig ist, und starten Sie unabhängige Teile jetzt.',
-      adIdle: (n) => `${n} offene Aufgabe(n) ohne Aktivität seit über einem Tag`, adIdleFix: 'Wecken Sie die Agenten oder geben Sie die Aufgaben freien Agenten.',
-      adUnassigned: (n) => `${n} offene Aufgabe(n) ohne Agent`, adUnassignedFix: 'Weisen Sie einen Agenten zu; bis dahin arbeitet niemand daran.',
-      adOverload: (name, n, free) => `${name} hat ${n} offene Aufgaben, während ${free} frei sind`, adOverloadFix: 'Geben Sie einige an die freien Agenten ab oder fügen Sie einen zweiten Agenten mit derselben Rolle hinzu.',
-      adLong: (ids, age, typ) => `${ids} seit bis zu ${age} offen; ähnliche Aufgaben dauern hier etwa ${typ}`, adLongFix: 'Machen Sie die Abnahmekriterien konkret und teilen Sie die Arbeit in kleinere, parallel laufende Teilaufgaben.',
-      adChurn: (ids, n) => `${ids}: bis zu ${n} Läufe zuletzt und noch offen`, adChurnFix: 'Der Agent dreht sich womöglich im Kreis: klare Abschlussbedingung hinzufügen und prüfen, was ihn ständig weckt (Kommentare, Reviews).',
-      adReview: (n, age) => `${n} Aufgabe(n) warten im Review, die älteste seit ${age}`, adReviewFix: 'Fügen Sie einen Reviewer hinzu oder entlasten Sie ihn; risikoarme Änderungen brauchen evtl. kein Review.',
-      adDoneTask: (id, when) => `${id} erledigt (${when})`, adOpenTask: (id) => `${id} ist noch offen`, adStill: 'Das Problem zeigt sich weiter in den Daten.', adAgain: 'Erneut als Aufgabe anlegen', adEarlier: 'Frühere Ratschläge', adGone: 'zeigt sich nicht mehr in den Daten', adOutcome: 'Ergebnis', etaAt: (t) => `voraussichtlich ${t}`, etaSubs: (d, n, per) => `Aus den Teilaufgaben: ${d} von ${n} erledigt${per ? `, bisher je etwa ${per}` : ', im bisherigen Tempo'}`, etaLike: (n, rem) => `Aufgaben, die hier so lange liefen, waren etwa ${rem} später fertig (${n} Aufgaben)`, etaRough: 'Hier liefen nur wenige Aufgaben so lange; grobe Schätzung: noch etwa so lange, wie sie schon offen ist', blk: { stalled: (o) => (o ? `festgefahren: die Kette, auf die sie wartet, steht bei ${o}` : 'festgefahren, und nichts bringt sie weiter'), unassigned: (o) => `wartet auf ${o || 'eine Aufgabe'}, die niemandem zugewiesen ist`, backlog: (o) => `wartet auf ${o || 'eine Aufgabe'}, die im Backlog liegt`, uninvokable: (o) => `wartet auf ${o || 'eine Aufgabe'}, deren Agent nicht laufen kann`, cancelled: (o) => `wartet auf ${o || 'eine Aufgabe'}, die abgebrochen wurde`, review: (o) => `wartet auf die Prüfung von ${o || 'einer Aufgabe'}, die niemand macht`, disposition: () => 'der Lauf ist fertig, aber niemand hat über das Weitere entschieden', decision: () => 'wartet auf deine Entscheidung', external: () => 'wartet auf jemanden von außen', recovery: (o) => `eine Wiederherstellungsaufgabe ist offen${o ? ` (${o})` : ''}`, other: () => 'blockiert, jemand muss sich kümmern' }, blkAsks: (n) => `${n} steckt fest`, blkShow: 'Warum es feststeckt', blkLook: 'Blockade öffnen', blkMore: (n) => `${n} weitere festgefahrene Aufgabe${n === 1 ? '' : 'n'}`, blkSince: (d) => `angehalten ${d}`, blkHint: 'Öffne sie und schreibe den nächsten Schritt und wer ihn macht; ein Kommentar weckt den Agenten.', blkBubble: '⛔ steckt fest', blkPc: 'Vorschlag von Paperclip', etaTitle: 'Geschätzt aus der Dauer der erledigten Aufgaben dieses Agenten oder aus den Teilaufgaben', adDemoResult: 'Die liegenden Teilaufgaben gingen an einen freien Agenten; beide begannen innerhalb einer Stunde.', ciShow: 'Verbindungsanfrage anzeigen', ciAsks: (n, svc) => `${n} braucht eine Verbindung: ${svc}`, ciBtn: 'Verbinden', ciOpen: 'In Paperclip verbinden', ciNote: 'Die Verbindung wird in Paperclip eingerichtet (eigener Tab, für die Anmeldung); danach macht der Agent dort weiter, wo er stand.', adToTask: 'Als Aufgabe anlegen', adAllToTask: 'Alle als Aufgabe anlegen', adAssignee: 'Agent', adPriority: 'Priorität', adTaskTitle: 'Titel', adCreate: 'In Paperclip anlegen', adCreating: 'Wird angelegt…',
-      adCreated: (id) => `${id} angelegt`, adOff: 'Ratschläge als Aufgaben anlegen ist aus.', adTurnOn: 'Cubicle darf diese Aufgaben in Paperclip anlegen (als Teilaufgaben der langsamen Aufgabe)', adOnlyHere: 'Wird auf dem Rechner eingeschaltet, auf dem Cubicle läuft.',
-      adTaskName: (id, text) => `${id} beschleunigen: ${text}`, adTaskHead: 'Beschleunigungs-Rat von Cubicle', adFor: 'Aufgabe', adTaskFinding: 'Befund', adTaskFix: 'Rat', adTaskWhere: 'Betrifft',
-      adTaskSource: (d) => `Von Cubicle am ${d} aus Paperclips Aufgaben, letzten Läufen und Kosten abgeleitet.`, adPrios: { critical: 'Kritisch', high: 'Hoch', medium: 'Mittel', low: 'Niedrig' },
-      kpiNote: 'Aufgaben, die ein Mensch angelegt hat, nicht die der Agenten untereinander. Der Fortschritt kommt aus den Teilaufgaben, ohne Teilaufgaben aus dem Status; die voraussichtliche Zeit folgt dem bisherigen Tempo oder der üblichen Dauer in dieser Firma.',
-      chat: 'Chat', chatTitle: (n) => `Chat mit ${n}`, chatNote: 'Agent Chat von Paperclip: fragen Sie, ohne eine Aufgabe zu vergeben. Ist er deaktiviert, schalten Sie ihn in Paperclip → Instance settings → Experimental ein.',
-      human: 'Ihr Schreibtisch: Agenten, die Sie brauchen, stellen sich dort an', you: 'Sie', queue: (n) => `${n} warten auf Sie`, myLook: 'Mein Aussehen',
-      language: 'Sprache', languageAuto: 'Browsersprache',
-      reply: 'Antworten', replyTitle: (n) => `${n} wartet auf Sie`, openInPaperclip: 'In Paperclip öffnen ↗', replyNote: 'Sie antworten auf der Seite von Paperclip selbst; Cubicle bleibt schreibgeschützt.', close: 'Schließen', anim: 'Büro-Animation', cardsToggle: 'Agentenkarten', viewNote: 'Ohne Animation zeigen die Karten jeden Agenten an seinem Schreibtisch.',
-      openTask: 'Aufgabe öffnen', openRun: 'Lauf-Protokoll öffnen', looksName: 'Aussehen & Name', lastFail: (a) => `Letzter Lauf fehlgeschlagen · ${a}`, alias: 'Name in Cubicle', aliasHint: 'Nur Cubicle zeigt diesen Namen; Paperclip behält seinen eigenen.', renameInPaperclip: 'In Paperclip umbenennen ↗',
-      talk: {
-        doneA: (id) => `Ich habe gerade ${id} abgeschlossen.`, doneB: 'Sehr gut. War es knifflig?', doneD: 'Gut, eins weniger auf dem Board.',
-        doneC: ['Ein paar Randfälle, aber die Tests haben sie gefunden.', 'Nicht wirklich, die Vorgabe war klar.', 'Das Review hat länger gedauert als die Arbeit.'],
-        nextA: (n) => `Was steht als Nächstes an, ${n}?`, nextB: (id, t) => `${id}: ${t}.`, nextC: 'Klingt gut. Sag Bescheid, wenn du Hilfe brauchst.',
-        waitA: (n) => `${n} wartet auf eine Antwort vom Board.`, waitB: (id) => (id ? `Wegen ${id}? Hoffentlich antwortet bald jemand.` : 'Hoffentlich antwortet bald jemand.'),
-        errA: (n) => `Bei ${n} ist gerade ein Lauf fehlgeschlagen.`, errB: 'Es wird neu versucht. Sonst schaut jemand in die Logs.',
-        busyA: (k) => `Gerade arbeiten ${k} von uns konzentriert.`, busyB: 'Dann ist jetzt die richtige Zeit für einen Kaffee.',
-        roleA: (r) => `Wie läuft es gerade bei ${r}?`, roleB: ['Viel los, aber gut.', 'Heute ruhig, zur Abwechslung.', 'Ich warte auf das nächste Ticket.'],
-      },
-      record: '30-Sekunden-Video aufnehmen', recording: (n) => `Aufnahme… ${n} s`, recordSaved: 'Video gespeichert ✓', recordUnsupported: 'Dieser Browser kann das Büro nicht aufnehmen.',
-      logo: 'Firmenlogo', logoPick: 'Logo hochladen…', logoRemove: 'Logo entfernen',
-      exportLooks: 'Aussehen exportieren', importLooks: 'Aussehen importieren…',
-      editLook: 'Aussehen ändern', looks: 'Aussehen', photo: 'Foto als Kopf', photoPick: 'Bild wählen…',
-      photoHint: 'Bild ziehen zum Verschieben, scrollen oder Regler zum Zoomen, bis das Gesicht den Kreis füllt.', zoom: 'Zoom',
-      findFace: 'Gesicht finden', noFace: 'Kein Gesicht gefunden: Kreis von Hand setzen.', photoRemove: 'Foto entfernen',
-      hair: 'Haare', hairShort: 'Kurz', hairLong: 'Lang', hairBun: 'Dutt', hairPony: 'Pferdeschwanz', hairCurly: 'Lockig', hairBald: 'Glatze',
-      hairColor: 'Haarfarbe', skin: 'Haut', color: 'Farbe', clothes: 'Kleidung', trousers: 'Hose', skirt: 'Rock', shoes: 'Schuhe', flats: 'Flach', heels: 'Absätze',
-      save: 'Speichern', cancel: 'Abbrechen', resetLook: 'Zurücksetzen',
-      lookServer: 'Auf dem Rechner gespeichert, auf dem Cubicle läuft, damit jeder Bildschirm dieses Büros es zeigt.', lookLocal: 'In diesem Browser gespeichert. Exportieren, um es in einem anderen zu nutzen.',
-      lookDenied: 'Nur ein Browser auf dem Rechner, auf dem Cubicle läuft, kann das Aussehen ändern. Vorerst in diesem Browser gespeichert.',
-      needsYouTitle: (n) => `${n} braucht dich`,
-      lastSteps: 'Letzte Schritte', whatsNew: (v) => `Cubicle wurde auf ${v} aktualisiert.`, whatsNewLink: 'Was ist neu', reloadNote: 'Cubicle wurde aktualisiert.', reloadBtn: 'Seite neu laden', upNew: (v, cur) => `⬆ Cubicle ${v} ist da (du hast ${cur}).`, upHow: 'Zum Aktualisieren:', upCopy: 'Kopieren', upCopied: 'Kopiert', upAuto: 'Es aktualisiert sich gleich selbst; die Seite lädt dann neu.', upAutoHint: 'Mit --auto-update gestartet, aktualisiert sich Cubicle selbst.', upNow: 'Jetzt aktualisieren', upBusy: 'Wird aktualisiert…', upDone: 'Aktualisiert; lädt neu.', upErr: 'Von hier ging es nicht. Stattdessen ausführen:', upFail: 'Von hier ging es nicht (dafür braucht es einen Instanz-Admin). Dort ausführen, wo Paperclip läuft:',
-      pairs: [['Hast du es gemergt?', 'Erst die Tests. Immer erst die Tests.'], ['Kaffee oder Tee?', 'Hauptsache, die Tokens fließen.'], ['Wer hat den Build kaputt gemacht?', 'Ich nicht, ich war in der Pause.'],
-        ['Viel los heute?', 'Vierzig Tool-Aufrufe und es werden mehr.'], ['Neues vom Vorstand?', 'Ich warte noch auf eine Freigabe.'], ['Schöner Schreibtisch.', 'Jetzt mit zwei Monitoren!']],
-      chatter: ['☕', 'Kaffeepause', '…', 'hmm', 'was kommt jetzt?'],
-      hint: 'Arbeitende Agenten sitzen am Schreibtisch und tippen, freie hängen in der Lounge ab. Aktualisiert alle 4 s.',
-      demo: 'Demo-Modus mit erfundenen Agenten. Entferne <code>?demo</code> aus der Adresse, um deine eigene Paperclip-Firma zu sehen.',
-      hosted: 'Das ist die gehostete Demo mit erfundenen Agenten. Für deine eigenen Agenten <code>npx @caglarutkuguler/cubicle</code> ausführen und <code>http://127.0.0.1:3200</code> öffnen, oder es als Paperclip-Plugin installieren.',
-    },
-    es: {
-      tgAccess: "¿Quién puede usar el bot?",
-      tgAllowEveryone: "Permitir a todos",
-      tgAllowEveryoneHint: "Como antes, cualquiera con el código de vinculación puede vincular un chat.",
-      tgRestrictedHint: "Solo los usuarios de la lista pueden vincularse, usar comandos y recibir notificaciones en chats privados. Los cambios se aplican al instante.",
-      tgUserId: "ID de usuario de Telegram",
-      tgAddUser: "Añadir",
-      tgRemoveUser: "Quitar",
-      tgNoUsers: "La lista está vacía. Nadie puede usar el bot ni recibir notificaciones.",
-      tgLinkedUsers: "Usuarios vinculados anteriormente",
-      tgUserInvalid: "Introduce un ID de usuario de Telegram numérico y positivo, no un @nombredeusuario.",
-      tgAccessFailed: "No se pudo guardar la configuración de acceso. Inténtalo de nuevo.",
-      connecting: 'Conectando…', unreachable: 'No se puede conectar con Paperclip, reintentando…',
-      denied: (c) => `Paperclip denegó el acceso (${c}). Define PAPERCLIP_TOKEN para un Paperclip con autenticación o revisa la clave.`, feedUnreachable: 'No se puede leer el feed de agentes, reintentando…',
-      empty: 'Todavía no hay agentes.', emptyClaude: 'Todavía no hay sesiones de Claude Code. Ejecuta <code>claude</code> en cualquier carpeta y entrará.',
-      noCompany: 'Todavía no hay empresa.', summary: (n, r) => `${n} agentes · ${r} trabajando`,
-      running: 'trabajando', idle: 'libre', error: 'error', paused: 'en pausa', waiting: 'te necesita', noTask: 'sin tarea abierta asignada',
-      done: '✓ listo', errBubble: '⚠ error', waitBubble: '✋ te necesita',
-      asks: 'espera tu respuesta en', needYou: (n) => `${n} te ${n === 1 ? 'necesita' : 'necesitan'}`, redacted: '🔒 detalles ocultos',
-      settings: 'Ajustes', theme: 'Tema', copyLink: 'Copiar enlace con estos ajustes', copied: 'Copiado ✓',
-      settingsNote: 'Se guardan en este navegador. El enlace los lleva a otra pantalla (añade ?kiosk para una TV).',
-      spend: (a, b) => `${a} / ${b} este mes`, spendNoBudget: (a) => `${a} este mes`, spendTitle: 'Gasto de este mes según Paperclip',
-      handoff: (id, to) => `${id} → ${to}`, replay: 'repetición',
-      notify: 'Notificación de escritorio cuando un agente me necesita', notifyBlocked: 'Las notificaciones están bloqueadas para esta página en los ajustes del navegador.',
-      sound: 'Sonido', soundOff: 'Desactivado', soundNeed: 'Cuando un agente me necesita', soundAll: 'Me necesita, terminado y errores',
-      fps: 'Fotogramas por segundo', fpsAuto: 'Automático', fps30: '30 fps (más ligero)', fps15: '15 fps (lo más ligero)',
-      layout: 'Disposición', layoutAuto: 'Automática (ajustar a la página)', layoutSide: 'Oficina y tarjetas lado a lado', layoutStack: 'Tarjetas debajo de la oficina',
-      openPaperclip: 'Abrir Paperclip en su propia pestaña', kpiTitle: 'Progreso de las tareas que diste', kpi: 'Tareas que diste', kpiOpen: 'Abiertas', kpiAvg: 'Progreso medio', kpiDone7: 'Terminadas en 7 días', kpiLead: 'Tiempo habitual', kpiBlocked: 'Esperan otras tareas',
-      waitsOn1: (id) => `espera a ${id}`, waitsOnN: (n, id) => `espera ${n} tareas (${id}…)`, waitsSubs: (n) => `espera ${n} subtareas`, waitsYou: 'te espera', stalled: (n) => `${n} atascadas`,
-      sView: 'Vista', sAlerts: 'Avisos', sMore: 'Más', sCopy: 'Copiar enlace', sLogo: 'Logo…', sNoLogo: 'Quitar logo', sExport: 'Exportar', sImport: 'Importar…', sRecord: 'Vídeo de 30 s', sPets: "Mascotas", petsNote: "Animales que pasean por la oficina. Haz clic en uno para saludarlo.", petName: {"cat": "Gato", "dog": "Perro", "rabbit": "Conejo", "robot": "Robot aspirador"}, petSay: {"cat": "¡Miau!", "dog": "¡Guau!", "rabbit": "♥", "robot": "Bip bup"}, sVoice: 'Voz (los agentes hablan)', voiceNote: 'El navegador lee en voz alta lo que pasa, con una voz para cada agente. Gratis e integrado en el navegador; Cubicle no envía nada. Algunos navegadores piden antes un clic en la página.', voiceKinds: { wait: 'Me necesitan', start: 'Empiezan', done: 'Terminan', err: 'Errores', chat: 'Charlas' }, voicePick: 'Voz', voiceAuto: 'Automática (una por agente)', voiceNone: 'Este navegador no tiene voz para este idioma. Edge tiene voces naturales; en Windows, un paquete de idioma añade una.', voiceOn: 'La voz está activada.',
-      say: { wait: (n, w) => `${n} te necesita${w ? ': ' + w : ''}.`, start: (n, w) => `${n} empieza a trabajar${w ? ': ' + w : ''}.`, done: (n, w) => `${n} terminó${w ? ': ' + w : ''}.`, err: (n, w) => `${n} tuvo un error${w ? ': ' + w : ''}.` },
-      voiceSex: "Voz", voiceSexAuto: "Según el aspecto", female: "Femenina", male: "Masculina", voiceSexMode: "Mujeres / hombres", voiceSexLook: "Según cómo se ven", voiceSexMix: "Mixto (uno y uno)", voiceSexF: "Todos con voz de mujer", voiceSexM: "Todos con voz de hombre", voiceF: "Voz de mujer", voiceM: "Voz de hombre", voiceNoF: "Este navegador no tiene voz de mujer para este idioma; las mujeres hablan con la misma voz (algunos navegadores la hacen más aguda, Chrome en Windows no). Microsoft Edge tiene voces naturales de mujer.", openEdge: "Abrir en Edge", voiceNoM: "Este navegador no tiene voz de hombre para este idioma; los hombres hablan con la voz de mujer más grave. Microsoft Edge tiene voces naturales de hombre.", voiceTry: "Probar", voiceTryF: "Hola, esta es una voz de mujer.", voiceTryM: "Hola, esta es una voz de hombre.", sHuman: 'Tu escritorio', sNotify: 'Notificación de escritorio',
-      tgButton: '📨 Telegram…', tgIntro: 'Recibe un mensaje en el móvil cuando un agente te necesita o una ejecución falla, con enlaces al agente y a la tarea, y pregunta a la oficina cómo va.',
-      tgCommands: 'Comandos: /status, /waiting, /kpi, /office, /answer ID texto, /mute nombre, /alerts all|questions|failures',
-      tg1: 'Crea un bot', tg1Text: 'En Telegram, abre @BotFather, entra en My Bots y pulsa «Create a New Bot». Dale un nombre y un usuario que termine en «bot». BotFather te envía un token, una línea larga como 123456789:AAH…; cópiala.',
-      tg2: 'Pega el token aquí', tgTokenPh: 'p. ej. 123456789:AAH…', tgSave: 'Guardar', tgSaving: 'Comprobando…', tgBad: { format: 'Eso no parece un token de bot. Copia la línea completa que envió BotFather.', refused: 'Telegram rechazó este token. Vuelve a copiarlo de BotFather.', unreachable: 'No se pudo conectar con Telegram desde este equipo. Revisa la conexión a internet.', url: 'No es una dirección web; debe empezar por http:// o https://.' },
-      tgBotOk: (u) => `✓ Conectado a ${u}`, tgRemove: 'Desconectar', tgFromEnv: 'El token está definido en el entorno del servidor.',
-      tg3: 'Vincula tu Telegram', tg3Text: 'Escanea el código con la cámara del móvil o usa uno de los botones. Cuando tu bot se abra en Telegram, pulsa «Iniciar».', tgOpenBot: 'App de Telegram en este equipo', tgLinked: (n) => `✓ ${n} chat(s) vinculado(s)`, tgWaitStart: 'Esperando a que pulses Iniciar en Telegram…',
-      tg4: 'Opcional: responder desde Telegram', tgRepliesLabel: 'Quiero responder contestando a un mensaje; mi respuesta se escribe como comentario en la tarea de Paperclip',
-      tgLocal: 'Solo se puede configurar en el equipo donde se ejecuta Cubicle.', tgPhone: 'Los enlaces se abren en este equipo; para el móvil, mira el paso 5.',
-      tgOpenWeb: 'Telegram Web', tgScan: 'Escanéalo con el móvil', tgOrSend: 'Si «Iniciar» no hace nada, envía al bot este mensaje:', tgCopy: 'Copiar', tgCopied: 'Copiado',
-      tgNoApp: 'El botón «Start Bot» de la página t.me solo funciona si la app de Telegram está instalada en este equipo. Si no, usa el móvil o Telegram Web.',
-      tgWrong: 'El bot recibió un mensaje, pero sin el código correcto. Envía el mensaje de arriba.', tgPoll: { conflict: 'Otro programa está leyendo este bot (¿la conexión de Telegram de Paperclip?). Dale a Cubicle un bot propio.', unreachable: 'No se puede llegar a Telegram desde este equipo. Revisa la conexión a internet.', refused: 'Telegram rechazó el token. Desconecta y pégalo de nuevo.' },
-      tg5: 'Opcional: abrir los enlaces en el móvil', tg5Text: 'Ahora los enlaces de los mensajes solo se abren en este equipo. Para abrirlos en el móvil, Cubicle usa Tailscale (gratis): la oficina solo se abre en tus propios dispositivos.',
-      ts1: 'En este equipo: descarga Tailscale de tailscale.com/download e instálalo. Luego se abre una página de acceso; entra con tu cuenta de Google, Microsoft o Apple.', ts2: 'En el móvil: busca «Tailscale» en App Store o Google Play e instálalo. Ábrelo, entra con la misma cuenta que en el equipo y permite la VPN cuando lo pida.', ts3: 'Vuelve aquí y pulsa «Comprobar de nuevo».',
-      tsDownload: 'Descargar Tailscale', tsCheck: 'Comprobar de nuevo', tsChecking: 'Comprobando…', tsOff: 'Tailscale está instalado pero no conectado. Haz clic en el icono de Tailscale de la barra de tareas (junto al reloj) e inicia sesión o pulsa «Connect»; luego comprueba de nuevo.',
-      tsOn: (d) => `✓ Tailscale funciona en este equipo (${d}).`, tsServe: 'Abrir la oficina en mi móvil', tsServeNote: 'Solo los dispositivos de tu cuenta de Tailscale pueden abrirla; los ajustes y el código se quedan en este equipo.',
-      tsNoPhone: 'Aún no hay ningún móvil en tu cuenta de Tailscale: instálalo en el móvil y entra con la misma cuenta.', tsFail: 'Tailscale no lo aceptó. Ejecuta esto una vez en este equipo (PowerShell o Terminal):',
-      tsPhoneOn: 'En el móvil, la app de Tailscale debe estar activada (conectada).', apBtn: 'Aprobar / rechazar', apWait: 'Espera tu aprobación', apShow: 'Ver la solicitud de aprobación', apAsks: (n) => `${n} pide tu aprobación`, apRisks: 'Riesgos', apOpen: 'Aprobar o rechazar en Paperclip', qShow: 'Ver la pregunta', qAsks: (n) => `${n} te pregunta`, pcAway: 'Paperclip solo se abre en el equipo donde se ejecuta. Para responder desde aquí, contesta al mensaje del agente en Telegram.', tsManual: 'O escribe una dirección tú mismo',
-      tgPhonePh: 'p. ej. http://mi-pc.tail1234.ts.net:3200', tgPhoneOk: (u) => `✓ Los enlaces se abren en ${u}`, tgPhoneTry: 'Ábrelo en el móvil para probar', tgPhoneFixed: 'La dirección se dio al iniciar Cubicle (--public-url).', tgPhoneClear: 'Quitar',
-      tgEmbed: 'El bot de Telegram pertenece al Cubicle independiente de este equipo, no a la oficina dentro de Paperclip. Ábrelo y pulsa allí ⚙ → Telegram:', tgOpenStandalone: 'Abrir Cubicle',
-      iss: { backlog: 'pendiente', todo: 'por hacer', in_progress: 'en curso', in_review: 'en revisión', blocked: 'bloqueada', done: 'terminada', cancelled: 'cancelada' },
-      kpiTask: 'Tarea', kpiWho: 'Agente', kpiProgress: 'Progreso', kpiEta: 'Previsto', kpiSub: (d, n) => `${d}/${n} subtareas`, kpiOver: 'pasó el tiempo habitual', kpiDone: 'terminada', kpiShowDone: 'Mostrar terminadas', kpiRefresh: 'Actualizar', kpiEmpty: 'Aún no hay tareas de personas.',
-      kpiStarted: 'Inicio', kpiTook: 'Duración', kpiRunningFor: (d) => `${d} en curso`, kpiAllRoots: 'También tareas de agentes', kpiExpand: 'Subtareas', kpiAdvice: 'Cómo acelerarla',
-      adTitle: (id) => `Cómo acelerar ${id}`, adLoading: 'Leyendo ejecuciones y costes…', adNone: 'Nada destaca: nada espera por ti, ni bloqueos detenidos, fallos repetidos o trabajo parado.',
-      adCost: (runs, time, cost) => `En total: ${runs} ejecuciones, ${time} de tiempo de agente, ${cost}.`, adFailShare: (p, n) => `El ${p} % de sus últimas ${n} ejecuciones falló.`,
-      adWaitsYou: (n, age) => `${n} tarea(s) esperan tu respuesta o aprobación, la más antigua desde hace ${age}`,
-      adWaitsYouFix: 'Nada avanza hasta que decidas. Responde; para decisiones que se repiten, da al agente la autoridad o una regla escrita para que no pregunte.',
-      adFailQuota: (n) => `${n} ejecuciones se detuvieron en el límite de uso del proveedor de IA`, adFailQuotaFix: 'Esas ejecuciones se pierden y se repiten después. Reparte el trabajo en el día, ejecuta menos agentes a la vez, prioriza lo crítico o añade un segundo proveedor o modelo.',
-      adQuotaAll: (n, all) => `En toda la empresa, ${n} de las últimas ${all} ejecuciones se detuvieron en el límite de uso del proveedor de IA`, adFailBig: (n) => `${n} ejecuciones no pudieron empezar: prompt demasiado grande (E2BIG)`, adFailBigFix: 'Acorta descripciones y largos hilos de comentarios, enlaza documentos largos en vez de pegarlos y reduce los archivos de instrucciones del agente.',
-      adFailTurn: (n) => `${n} ejecuciones se cortaron a mitad de turno (terminal, límite o servicio)`, adFailTurnFix: 'Divide el trabajo en pasos más pequeños, evita comandos largos en un solo turno y revisa los límites de tiempo y salida del agente.',
-      adFailLost: (n) => `${n} ejecuciones perdieron su proceso`, adFailLostFix: 'El equipo o WSL se suspendió o reinició. Mantenlo despierto mientras trabajan los agentes.',
-      adFailOther: (n, code) => `${n} ejecuciones fallaron con ${code}`, adFailOtherFix: 'Abre una de ellas para ver la causa; si el mismo fallo se repite, hay que cambiar un ajuste, no reintentar.',
-      adStalled: (n, chain) => `${n} tarea(s) esperan trabajo que también está detenido: ${chain}`, adStalledFix: 'Desbloquea el primer eslabón: dale prioridad u otro agente; revisa si la dependencia es necesaria y empieza ya las partes independientes.',
-      adIdle: (n) => `${n} tarea(s) abiertas sin actividad desde hace más de un día`, adIdleFix: 'Despierta a sus agentes o pásalas a agentes libres.',
-      adUnassigned: (n) => `${n} tarea(s) abiertas sin agente`, adUnassignedFix: 'Asigna un agente; hasta entonces nadie trabaja en ellas.',
-      adOverload: (name, n, free) => `${name} tiene ${n} tareas abiertas mientras ${free} están libres`, adOverloadFix: 'Pasa algunas a los agentes libres o añade un segundo agente con el mismo rol.',
-      adLong: (ids, age, typ) => `${ids} abiertas hasta ${age}; aquí tareas similares tardan unas ${typ}`, adLongFix: 'Concreta los criterios de aceptación y divide el trabajo en subtareas más pequeñas que puedan ir en paralelo.',
-      adChurn: (ids, n) => `${ids}: hasta ${n} ejecuciones recientes y sigue abierta`, adChurnFix: 'El agente puede estar dando vueltas: añade una condición clara de fin y mira qué lo despierta (comentarios, revisiones).',
-      adReview: (n, age) => `${n} tarea(s) esperan revisión, la más antigua desde hace ${age}`, adReviewFix: 'Añade un revisor o aligera su carga; los cambios de bajo riesgo pueden no necesitar revisión.',
-      adDoneTask: (id, when) => `${id} terminada (${when})`, adOpenTask: (id) => `${id} sigue abierta`, adStill: 'El problema sigue apareciendo en los datos.', adAgain: 'Convertir en tarea de nuevo', adEarlier: 'Consejos anteriores', adGone: 'ya no aparece en los datos', adOutcome: 'Resultado', etaAt: (t) => `previsto ${t}`, etaSubs: (d, n, per) => `Por sus subtareas: ${d} de ${n} hechas${per ? `, unos ${per} cada una hasta ahora` : ', al ritmo actual'}`, etaLike: (n, rem) => `Las tareas que llevaban tanto tiempo terminaron unas ${rem} después (${n} tareas)`, etaRough: 'Pocas tareas han durado tanto aquí; estimación aproximada: otro tanto como lleva abierta', blk: { stalled: (o) => (o ? `atascada: la cadena que espera se detuvo en ${o}` : 'atascada, y nada la hará avanzar'), unassigned: (o) => `espera ${o || 'una tarea'}, que no tiene a nadie asignado`, backlog: (o) => `espera ${o || 'una tarea'}, que está en el backlog`, uninvokable: (o) => `espera ${o || 'una tarea'}, cuyo agente no puede ejecutarse`, cancelled: (o) => `espera ${o || 'una tarea'}, que fue cancelada`, review: (o) => `espera la revisión de ${o || 'una tarea'}, que nadie hace`, disposition: () => 'su ejecución terminó pero nadie decidió qué sigue', decision: () => 'espera tu decisión', external: () => 'espera a alguien de fuera', recovery: (o) => `hay una tarea de recuperación abierta${o ? ` (${o})` : ''}`, other: () => 'bloqueada; alguien debe mirarla' }, blkAsks: (n) => `${n} está atascado`, blkShow: 'Por qué está atascado', blkLook: 'Abrir el bloqueo', blkMore: (n) => `${n} tarea${n === 1 ? '' : 's'} atascada${n === 1 ? '' : 's'} más`, blkSince: (d) => `detenida ${d}`, blkHint: 'Ábrela y escribe el siguiente paso y quién lo hace; un comentario despierta al agente.', blkBubble: '⛔ atascado', blkPc: 'Sugerencia de Paperclip', etaTitle: 'Estimado según lo que tardaron las tareas terminadas de este agente o según las subtareas', adDemoResult: 'Las subtareas paradas pasaron a un agente libre; ambas empezaron en menos de una hora.', ciShow: 'Ver la solicitud de conexión', ciAsks: (n, svc) => `${n} necesita una conexión: ${svc}`, ciBtn: 'Conectar', ciOpen: 'Conectar en Paperclip', ciNote: 'La conexión se configura en Paperclip (se abre en su propia pestaña para iniciar sesión); al conectar, el agente sigue donde se quedó.', adToTask: 'Convertir en tarea', adAllToTask: 'Convertir todo en una tarea', adAssignee: 'Agente', adPriority: 'Prioridad', adTaskTitle: 'Título', adCreate: 'Crear en Paperclip', adCreating: 'Creando…',
-      adCreated: (id) => `${id} creada`, adOff: 'Convertir consejos en tareas está desactivado.', adTurnOn: 'Permitir que Cubicle cree estas tareas en Paperclip (como subtareas de la tarea lenta)', adOnlyHere: 'Se activa desde el equipo donde se ejecuta Cubicle.',
-      adTaskName: (id, text) => `Acelerar ${id}: ${text}`, adTaskHead: 'Consejo de aceleración de Cubicle', adFor: 'Tarea', adTaskFinding: 'Hallazgo', adTaskFix: 'Consejo', adTaskWhere: 'Afecta a',
-      adTaskSource: (d) => `Obtenido por Cubicle el ${d} de las tareas, ejecuciones recientes y costes de Paperclip.`, adPrios: { critical: 'Crítica', high: 'Alta', medium: 'Media', low: 'Baja' },
-      kpiNote: 'Tareas que creó una persona, no las que los agentes se crean entre sí. El progreso sale de las subtareas, o del estado si no tiene; el tiempo previsto sigue el ritmo hasta ahora o lo que suele tardar una tarea en esta empresa.',
-      chat: 'Chat', chatTitle: (n) => `Chat con ${n}`, chatNote: 'El Agent Chat de Paperclip: pregunta sin asignar una tarea. Si dice que está desactivado, actívalo en Paperclip → Instance settings → Experimental.',
-      human: 'Tu escritorio: los agentes que te necesitan hacen cola allí', you: 'Tú', queue: (n) => `${n} esperándote`, myLook: 'Mi aspecto',
-      language: 'Idioma', languageAuto: 'Idioma del navegador',
-      reply: 'Responder', replyTitle: (n) => `${n} te está esperando`, openInPaperclip: 'Abrir en Paperclip ↗', replyNote: 'Respondes en la propia página de Paperclip; Cubicle sigue siendo de solo lectura.', close: 'Cerrar', anim: 'Animación de la oficina', cardsToggle: 'Tarjetas de agentes', viewNote: 'Sin animación, las tarjetas muestran a cada agente en su escritorio.',
-      openTask: 'Abrir tarea', openRun: 'Abrir registro de ejecución', looksName: 'Aspecto y nombre', lastFail: (a) => `La última ejecución falló · ${a}`, alias: 'Nombre en Cubicle', aliasHint: 'Solo Cubicle muestra este nombre; Paperclip conserva el suyo.', renameInPaperclip: 'Renombrar en Paperclip ↗',
-      talk: {
-        doneA: (id) => `Acabo de terminar ${id}.`, doneB: '¡Bien! ¿Fue complicado?', doneD: 'Genial, una menos en el tablero.',
-        doneC: ['Algunos casos límite, pero los tests los detectaron.', 'No mucho, la especificación era clara.', 'La revisión tardó más que el trabajo.'],
-        nextA: (n) => `¿Qué tienes ahora, ${n}?`, nextB: (id, t) => `${id}: ${t}.`, nextC: 'Suena bien. Avísame si necesitas ayuda.',
-        waitA: (n) => `${n} está esperando una respuesta de la dirección.`, waitB: (id) => (id ? `¿Por ${id}? Ojalá alguien conteste pronto.` : 'Ojalá alguien conteste pronto.'),
-        errA: (n) => `A ${n} le acaba de fallar una ejecución.`, errB: 'Lo reintentará. Si no, alguien mirará los logs.',
-        busyA: (k) => `Ahora mismo ${k} de nosotros están concentrados.`, busyB: 'Entonces es buen momento para un café.',
-        roleA: (r) => `¿Qué tal va ${r}?`, roleB: ['Mucho trabajo, pero bien.', 'Hoy está tranquilo, por fin.', 'Esperando el siguiente ticket.'],
-      },
-      record: 'Grabar un vídeo de 30 s', recording: (n) => `Grabando… ${n} s`, recordSaved: 'Vídeo guardado ✓', recordUnsupported: 'Este navegador no puede grabar la oficina.',
-      logo: 'Logo de la empresa', logoPick: 'Subir un logo…', logoRemove: 'Quitar el logo',
-      exportLooks: 'Exportar apariencia', importLooks: 'Importar apariencia…',
-      editLook: 'Cambiar apariencia', looks: 'Apariencia', photo: 'Cabeza con foto', photoPick: 'Elegir una imagen…',
-      photoHint: 'Arrastra la imagen para moverla y usa la rueda o el control para acercar, hasta que la cara llene el círculo.', zoom: 'Zoom',
-      findFace: 'Buscar la cara', noFace: 'No se encontró una cara: coloca el círculo a mano.', photoRemove: 'Quitar la foto',
-      hair: 'Pelo', hairShort: 'Corto', hairLong: 'Largo', hairBun: 'Moño', hairPony: 'Coleta', hairCurly: 'Rizado', hairBald: 'Calvo',
-      hairColor: 'Color de pelo', skin: 'Piel', color: 'Color', clothes: 'Ropa', trousers: 'Pantalón', skirt: 'Falda', shoes: 'Zapatos', flats: 'Planos', heels: 'Tacones',
-      save: 'Guardar', cancel: 'Cancelar', resetLook: 'Volver al predeterminado',
-      lookServer: 'Guardado en el equipo donde corre Cubicle, así cada pantalla de esta oficina lo muestra.', lookLocal: 'Guardado en este navegador. Expórtalo para usarlo en otro.',
-      lookDenied: 'Solo un navegador en el equipo donde corre Cubicle puede cambiar la apariencia. Guardado en este navegador por ahora.',
-      needsYouTitle: (n) => `${n} te necesita`,
-      lastSteps: 'Últimos pasos', whatsNew: (v) => `Cubicle se actualizó a la ${v}.`, whatsNewLink: 'Novedades', reloadNote: 'Cubicle se ha actualizado.', reloadBtn: 'Recargar la página', upNew: (v, cur) => `⬆ Ya está Cubicle ${v} (tienes ${cur}).`, upHow: 'Para actualizar:', upCopy: 'Copiar', upCopied: 'Copiado', upAuto: 'Se actualizará solo en un momento; luego esta página se recarga.', upAutoHint: 'Inicia Cubicle con --auto-update y se actualiza solo.', upNow: 'Actualizar ahora', upBusy: 'Actualizando…', upDone: 'Actualizado; recargando.', upErr: 'No se pudo actualizar desde aquí. Ejecuta esto en su lugar:', upFail: 'No se pudo actualizar desde aquí (hace falta un administrador de la instancia). Ejecuta esto donde corre Paperclip:',
-      pairs: [['¿Ya lo fusionaste?', 'Primero las pruebas. Siempre primero las pruebas.'], ['¿Café o té?', 'Lo que mantenga los tokens fluyendo.'], ['¿Quién rompió el build?', 'Yo no, estaba en el descanso.'],
-        ['¿Día ajetreado?', 'Cuarenta llamadas a herramientas y contando.'], ['¿Noticias de la dirección?', 'Sigo esperando una aprobación.'], ['Bonito escritorio.', '¡Ahora tiene dos monitores!']],
-      chatter: ['☕', 'pausa para el café', '…', 'mmm', '¿y ahora qué?'],
-      hint: 'Los agentes que trabajan se sientan en su mesa y teclean; los libres pasan el rato en la sala de descanso. Se actualiza cada 4 s.',
-      demo: 'Modo demo con agentes ficticios. Quita <code>?demo</code> de la dirección para ver tu propia empresa de Paperclip.',
-      hosted: 'Esta es la demo alojada con agentes ficticios. Para ver tus propios agentes, ejecuta <code>npx @caglarutkuguler/cubicle</code> y abre <code>http://127.0.0.1:3200</code>, o instálalo como plugin de Paperclip.',
-    },
-    fr: {
-      tgAccess: "Qui peut utiliser le bot ?",
-      tgAllowEveryone: "Autoriser tout le monde",
-      tgAllowEveryoneHint: "Comme avant, toute personne disposant du code peut lier une discussion.",
-      tgRestrictedHint: "Seuls les utilisateurs de la liste peuvent se lier, utiliser les commandes et recevoir des notifications en discussion privée. Les changements sont immédiats.",
-      tgUserId: "Identifiant utilisateur Telegram",
-      tgAddUser: "Ajouter",
-      tgRemoveUser: "Retirer",
-      tgNoUsers: "La liste est vide. Personne ne peut utiliser le bot ni recevoir de notifications.",
-      tgLinkedUsers: "Utilisateurs déjà liés",
-      tgUserInvalid: "Saisissez un identifiant utilisateur Telegram numérique positif, pas un @nomutilisateur.",
-      tgAccessFailed: "Impossible d’enregistrer les paramètres d’accès. Veuillez réessayer.",
-      connecting: 'Connexion…', unreachable: 'Impossible de joindre Paperclip, nouvel essai…',
-      denied: (c) => `Paperclip a refusé l’accès (${c}). Définissez PAPERCLIP_TOKEN pour un Paperclip avec authentification, ou vérifiez la clé.`, feedUnreachable: 'Impossible de lire le flux des agents, nouvel essai…',
-      empty: 'Aucun agent pour l’instant.', emptyClaude: 'Aucune session Claude Code pour l’instant. Lancez <code>claude</code> dans n’importe quel dossier et elle entrera.',
-      noCompany: 'Aucune entreprise pour l’instant.', summary: (n, r) => `${n} agents · ${r} au travail`,
-      running: 'au travail', idle: 'libre', error: 'erreur', paused: 'en pause', waiting: 'a besoin de vous', noTask: 'aucune tâche ouverte assignée',
-      done: '✓ terminé', errBubble: '⚠ erreur', waitBubble: '✋ a besoin de vous',
-      asks: 'attend votre réponse sur', needYou: (n) => `${n} ${n === 1 ? 'a' : 'ont'} besoin de vous`, redacted: '🔒 détails masqués',
-      settings: 'Réglages', theme: 'Thème', copyLink: 'Copier le lien avec ces réglages', copied: 'Copié ✓',
-      settingsNote: 'Enregistrés dans ce navigateur. Le lien les emporte sur un autre écran (ajoutez ?kiosk pour une télé).',
-      spend: (a, b) => `${a} / ${b} ce mois-ci`, spendNoBudget: (a) => `${a} ce mois-ci`, spendTitle: 'Dépenses du mois, selon Paperclip',
-      handoff: (id, to) => `${id} → ${to}`, replay: 'relecture',
-      notify: 'Notification de bureau quand un agent a besoin de moi', notifyBlocked: 'Les notifications sont bloquées pour cette page dans les réglages du navigateur.',
-      sound: 'Son', soundOff: 'Désactivé', soundNeed: 'Quand un agent a besoin de moi', soundAll: 'Besoin de moi, terminé et erreurs',
-      fps: 'Images par seconde', fpsAuto: 'Automatique', fps30: '30 i/s (plus léger)', fps15: '15 i/s (le plus léger)',
-      layout: 'Disposition', layoutAuto: 'Automatique (adapter à la page)', layoutSide: 'Bureau et cartes côte à côte', layoutStack: 'Cartes sous le bureau',
-      openPaperclip: 'Ouvrir Paperclip dans son propre onglet', kpiTitle: 'Avancement des tâches que vous avez données', kpi: 'Vos tâches', kpiOpen: 'Ouvertes', kpiAvg: 'Avancement moyen', kpiDone7: 'Terminées en 7 jours', kpiLead: 'Durée habituelle', kpiBlocked: 'En attente d’autres tâches',
-      waitsOn1: (id) => `attend ${id}`, waitsOnN: (n, id) => `attend ${n} tâches (${id}…)`, waitsSubs: (n) => `attend ${n} sous-tâches`, waitsYou: 'vous attend', stalled: (n) => `${n} bloquées`,
-      sView: 'Affichage', sAlerts: 'Alertes', sMore: 'Plus', sCopy: 'Copier le lien', sLogo: 'Logo…', sNoLogo: 'Retirer le logo', sExport: 'Exporter', sImport: 'Importer…', sRecord: 'Vidéo de 30 s', sPets: "Animaux", petsNote: "Des animaux qui se promènent dans le bureau. Cliquez sur l’un d’eux pour le saluer.", petName: {"cat": "Chat", "dog": "Chien", "rabbit": "Lapin", "robot": "Robot aspirateur"}, petSay: {"cat": "Miaou !", "dog": "Ouaf !", "rabbit": "♥", "robot": "Bip boup"}, sVoice: 'Voix (les agents parlent)', voiceNote: 'Le navigateur lit à voix haute ce qui se passe, avec une voix par agent. Gratuit et intégré au navigateur ; Cubicle n’envoie rien. Certains navigateurs demandent d’abord un clic sur la page.', voiceKinds: { wait: 'Besoin de moi', start: 'Commencent', done: 'Terminent', err: 'Erreurs', chat: 'Discussions' }, voicePick: 'Voix', voiceAuto: 'Automatique (une par agent)', voiceNone: 'Ce navigateur n’a pas de voix pour cette langue. Edge a des voix naturelles ; sous Windows, un module linguistique en ajoute une.', voiceOn: 'La voix est activée.',
-      say: { wait: (n, w) => `${n} a besoin de vous${w ? ' : ' + w : ''}.`, start: (n, w) => `${n} se met au travail${w ? ' : ' + w : ''}.`, done: (n, w) => `${n} a terminé${w ? ' : ' + w : ''}.`, err: (n, w) => `${n} a rencontré une erreur${w ? ' : ' + w : ''}.` },
-      voiceSex: "Voix", voiceSexAuto: "Selon l’apparence", female: "Féminine", male: "Masculine", voiceSexMode: "Femmes / hommes", voiceSexLook: "Selon leur apparence", voiceSexMix: "Mélangé (un sur deux)", voiceSexF: "Tout le monde en voix de femme", voiceSexM: "Tout le monde en voix d’homme", voiceF: "Voix de femme", voiceM: "Voix d’homme", voiceNoF: "Ce navigateur n’a pas de voix de femme pour cette langue ; les femmes parlent avec la même voix (certains navigateurs la rendent plus aiguë, pas Chrome sous Windows). Microsoft Edge a des voix naturelles de femme.", openEdge: "Ouvrir dans Edge", voiceNoM: "Ce navigateur n’a pas de voix d’homme pour cette langue ; les hommes parlent avec la voix de femme plus grave. Microsoft Edge a des voix naturelles d’homme.", voiceTry: "Essayer", voiceTryF: "Bonjour, voici une voix de femme.", voiceTryM: "Bonjour, voici une voix d’homme.", sHuman: 'Votre bureau', sNotify: 'Notification de bureau',
-      tgButton: '📨 Telegram…', tgIntro: 'Recevez un message sur votre téléphone quand un agent a besoin de vous ou qu’une exécution échoue, avec des liens vers l’agent et la tâche, et demandez au bureau où il en est.',
-      tgCommands: 'Commandes : /status, /waiting, /kpi, /office, /answer ID texte, /mute nom, /alerts all|questions|failures',
-      tg1: 'Créez un bot', tg1Text: 'Dans Telegram, ouvrez @BotFather, allez dans My Bots et appuyez sur « Create a New Bot ». Donnez-lui un nom et un nom d’utilisateur finissant par « bot ». BotFather vous envoie un jeton, une longue ligne comme 123456789:AAH… ; copiez-la.',
-      tg2: 'Collez le jeton ici', tgTokenPh: 'ex. 123456789:AAH…', tgSave: 'Enregistrer', tgSaving: 'Vérification…', tgBad: { format: 'Cela ne ressemble pas à un jeton de bot. Copiez toute la ligne envoyée par BotFather.', refused: 'Telegram a refusé ce jeton. Copiez-le à nouveau depuis BotFather.', unreachable: 'Impossible de joindre Telegram depuis cet ordinateur. Vérifiez la connexion internet.', url: 'Ce n’est pas une adresse web ; elle doit commencer par http:// ou https://.' },
-      tgBotOk: (u) => `✓ Connecté à ${u}`, tgRemove: 'Déconnecter', tgFromEnv: 'Le jeton est défini dans l’environnement du serveur.',
-      tg3: 'Liez votre Telegram', tg3Text: 'Scannez le code avec l’appareil photo du téléphone, ou utilisez un des boutons. Quand votre bot s’ouvre dans Telegram, appuyez sur « Démarrer ».', tgOpenBot: 'Application Telegram de cet ordinateur', tgLinked: (n) => `✓ ${n} discussion(s) liée(s)`, tgWaitStart: 'En attente de votre appui sur Démarrer dans Telegram…',
-      tg4: 'Facultatif : répondre depuis Telegram', tgRepliesLabel: 'Je veux répondre en répondant à un message ; ma réponse est écrite en commentaire sur la tâche Paperclip',
-      tgLocal: 'La configuration se fait uniquement sur l’ordinateur où tourne Cubicle.', tgPhone: 'Les liens s’ouvrent sur cet ordinateur ; pour le téléphone, voir l’étape 5.',
-      tgOpenWeb: 'Telegram Web', tgScan: 'Scannez avec le téléphone', tgOrSend: 'Si « Démarrer » ne fait rien, envoyez ce message au bot :', tgCopy: 'Copier', tgCopied: 'Copié',
-      tgNoApp: 'Le bouton « Start Bot » de la page t.me ne marche que si l’application Telegram est installée sur cet ordinateur. Sinon, utilisez le téléphone ou Telegram Web.',
-      tgWrong: 'Le bot a reçu un message, mais sans le bon code. Envoyez le message ci-dessus.', tgPoll: { conflict: 'Un autre programme lit ce bot (la connexion Telegram de Paperclip ?). Donnez à Cubicle son propre bot.', unreachable: 'Telegram est injoignable depuis cet ordinateur. Vérifiez la connexion internet.', refused: 'Telegram a refusé le jeton. Déconnectez et collez-le à nouveau.' },
-      tg5: 'Facultatif : ouvrir les liens sur le téléphone', tg5Text: 'Pour l’instant les liens des messages ne s’ouvrent que sur cet ordinateur. Pour le téléphone, Cubicle utilise Tailscale (gratuit) : le bureau ne s’ouvre alors que sur vos propres appareils.',
-      ts1: 'Sur cet ordinateur : téléchargez Tailscale sur tailscale.com/download et installez-le. Une page de connexion s’ouvre ensuite ; connectez-vous avec votre compte Google, Microsoft ou Apple.', ts2: 'Sur le téléphone : cherchez « Tailscale » dans l’App Store ou Google Play et installez-le. Ouvrez-le, connectez-vous avec le même compte que sur l’ordinateur et autorisez le VPN.', ts3: 'Revenez ici et appuyez sur « Vérifier à nouveau ».',
-      tsDownload: 'Télécharger Tailscale', tsCheck: 'Vérifier à nouveau', tsChecking: 'Vérification…', tsOff: 'Tailscale est installé mais pas connecté. Cliquez sur l’icône Tailscale de la barre des tâches (près de l’horloge) et connectez-vous ou appuyez sur « Connect », puis vérifiez à nouveau.',
-      tsOn: (d) => `✓ Tailscale fonctionne sur cet ordinateur (${d}).`, tsServe: 'Ouvrir le bureau sur mon téléphone', tsServeNote: 'Seuls les appareils de votre compte Tailscale peuvent l’ouvrir ; les réglages et le code restent sur cet ordinateur.',
-      tsNoPhone: 'Aucun téléphone dans votre compte Tailscale pour l’instant : installez Tailscale sur le téléphone et connectez-vous avec le même compte.', tsFail: 'Tailscale ne l’a pas accepté. Lancez ceci une fois sur cet ordinateur (PowerShell ou Terminal) :',
-      tsPhoneOn: 'Sur le téléphone, l’application Tailscale doit être activée (connectée).', apBtn: 'Approuver / refuser', apWait: 'Attend votre approbation', apShow: 'Voir la demande d’approbation', apAsks: (n) => `${n} demande votre approbation`, apRisks: 'Risques', apOpen: 'Approuver ou refuser dans Paperclip', qShow: 'Voir la question', qAsks: (n) => `${n} vous demande`, pcAway: 'Paperclip ne s’ouvre que sur l’ordinateur où il tourne. Pour répondre d’ici, répondez au message de l’agent dans Telegram.', tsManual: 'Ou écrivez une adresse vous-même',
-      tgPhonePh: 'ex. http://mon-pc.tail1234.ts.net:3200', tgPhoneOk: (u) => `✓ Les liens s’ouvrent sur ${u}`, tgPhoneTry: 'Ouvrez-la sur le téléphone pour essayer', tgPhoneFixed: 'L’adresse a été donnée au démarrage (--public-url).', tgPhoneClear: 'Retirer',
-      tgEmbed: 'Le bot Telegram appartient au Cubicle autonome de cet ordinateur, pas au bureau dans Paperclip. Ouvrez-le et appuyez sur ⚙ → Telegram :', tgOpenStandalone: 'Ouvrir Cubicle',
-      iss: { backlog: 'en attente', todo: 'à faire', in_progress: 'en cours', in_review: 'en revue', blocked: 'bloquée', done: 'terminée', cancelled: 'annulée' },
-      kpiTask: 'Tâche', kpiWho: 'Agent', kpiProgress: 'Avancement', kpiEta: 'Prévu', kpiSub: (d, n) => `${d}/${n} sous-tâches`, kpiOver: 'au-delà de la durée habituelle', kpiDone: 'terminée', kpiShowDone: 'Afficher les terminées', kpiRefresh: 'Actualiser', kpiEmpty: 'Pas encore de tâches créées par une personne.',
-      kpiStarted: 'Début', kpiTook: 'Durée', kpiRunningFor: (d) => `depuis ${d}`, kpiAllRoots: 'Aussi les tâches des agents', kpiExpand: 'Sous-tâches', kpiAdvice: 'Comment l’accélérer',
-      adTitle: (id) => `Comment accélérer ${id}`, adLoading: 'Lecture des exécutions et des coûts…', adNone: 'Rien ne ressort : pas d’attente sur vous, de blocage arrêté, d’échecs répétés ni de travail à l’arrêt.',
-      adCost: (runs, time, cost) => `Au total : ${runs} exécutions, ${time} de temps d’agent, ${cost}.`, adFailShare: (p, n) => `${p} % de ses ${n} dernières exécutions ont échoué.`,
-      adWaitsYou: (n, age) => `${n} tâche(s) attendent votre réponse ou approbation, la plus ancienne depuis ${age}`,
-      adWaitsYouFix: 'Rien n’avance sans votre décision. Répondez ; pour les décisions récurrentes, donnez à l’agent l’autorité ou une règle écrite.',
-      adFailQuota: (n) => `${n} exécutions arrêtées par la limite d’usage du fournisseur d’IA`, adFailQuotaFix: 'Ces exécutions sont perdues et relancées plus tard. Étalez le travail sur la journée, lancez moins d’agents à la fois, passez le critique en premier ou ajoutez un second fournisseur ou modèle.',
-      adQuotaAll: (n, all) => `Dans toute l’entreprise, ${n} des ${all} dernières exécutions ont été arrêtées par la limite d’usage du fournisseur d’IA`, adFailBig: (n) => `${n} exécutions n’ont pas pu démarrer : prompt trop grand (E2BIG)`, adFailBigFix: 'Raccourcissez descriptions et longs fils de commentaires, liez les longs documents au lieu de les coller et allégez les fichiers d’instructions de l’agent.',
-      adFailTurn: (n) => `${n} exécutions coupées en plein tour (terminal, limite ou service)`, adFailTurnFix: 'Découpez le travail en étapes plus petites, évitez les longues commandes en un seul tour et vérifiez les limites de temps et de sortie.',
-      adFailLost: (n) => `${n} exécutions ont perdu leur processus`, adFailLostFix: 'L’ordinateur ou WSL s’est mis en veille ou a redémarré. Gardez-le éveillé pendant le travail des agents.',
-      adFailOther: (n, code) => `${n} exécutions ont échoué avec ${code}`, adFailOtherFix: 'Ouvrez-en une pour voir la cause ; un même échec qui se répète demande un réglage, pas un nouvel essai.',
-      adStalled: (n, chain) => `${n} tâche(s) attendent un travail lui-même arrêté : ${chain}`, adStalledFix: 'Débloquez le premier maillon : priorité ou autre agent ; vérifiez si la dépendance est nécessaire et lancez maintenant les parties indépendantes.',
-      adIdle: (n) => `${n} tâche(s) ouvertes sans activité depuis plus d’un jour`, adIdleFix: 'Réveillez leurs agents ou confiez-les à des agents libres.',
-      adUnassigned: (n) => `${n} tâche(s) ouvertes sans agent`, adUnassignedFix: 'Assignez un agent ; d’ici là personne n’y travaille.',
-      adOverload: (name, n, free) => `${name} a ${n} tâches ouvertes alors que ${free} sont libres`, adOverloadFix: 'Confiez-en une partie aux agents libres ou ajoutez un second agent de même rôle.',
-      adLong: (ids, age, typ) => `${ids} ouvertes jusqu’à ${age} ; ici des tâches similaires prennent environ ${typ}`, adLongFix: 'Rendez les critères d’acceptation concrets et découpez le travail en sous-tâches plus petites menées en parallèle.',
-      adChurn: (ids, n) => `${ids} : jusqu’à ${n} exécutions récentes et toujours ouverte`, adChurnFix: 'L’agent tourne peut-être en rond : ajoutez une condition de fin claire et voyez ce qui le réveille (commentaires, revues).',
-      adReview: (n, age) => `${n} tâche(s) attendent une revue, la plus ancienne depuis ${age}`, adReviewFix: 'Ajoutez un relecteur ou allégez sa charge ; les changements à faible risque peuvent se passer de revue.',
-      adDoneTask: (id, when) => `${id} terminée (${when})`, adOpenTask: (id) => `${id} est encore ouverte`, adStill: 'Le problème apparaît toujours dans les données.', adAgain: 'Refaire une tâche', adEarlier: 'Conseils précédents', adGone: 'n’apparaît plus dans les données', adOutcome: 'Résultat', etaAt: (t) => `prévu ${t}`, etaSubs: (d, n, per) => `D’après ses sous-tâches : ${d} sur ${n} faites${per ? `, environ ${per} chacune jusqu’ici` : ', au rythme actuel'}`, etaLike: (n, rem) => `Les tâches ouvertes aussi longtemps ont fini environ ${rem} plus tard (${n} tâches)`, etaRough: 'Peu de tâches ont duré aussi longtemps ici ; estimation grossière : à peu près autant que depuis son ouverture', blk: { stalled: (o) => (o ? `bloquée : la chaîne qu’elle attend s’est arrêtée à ${o}` : 'bloquée, et rien ne la fera avancer'), unassigned: (o) => `attend ${o || 'une tâche'}, assignée à personne`, backlog: (o) => `attend ${o || 'une tâche'}, restée dans le backlog`, uninvokable: (o) => `attend ${o || 'une tâche'}, dont l’agent ne peut pas tourner`, cancelled: (o) => `attend ${o || 'une tâche'}, qui a été annulée`, review: (o) => `attend la revue de ${o || 'une tâche'}, que personne ne fait`, disposition: () => 'son exécution est finie mais personne n’a décidé de la suite', decision: () => 'attend votre décision', external: () => 'attend quelqu’un d’extérieur', recovery: (o) => `une tâche de reprise est ouverte${o ? ` (${o})` : ''}`, other: () => 'bloquée ; quelqu’un doit s’en occuper' }, blkAsks: (n) => `${n} est bloqué`, blkShow: 'Pourquoi c’est bloqué', blkLook: 'Ouvrir le blocage', blkMore: (n) => `${n} autre${n === 1 ? '' : 's'} tâche${n === 1 ? '' : 's'} bloquée${n === 1 ? '' : 's'}`, blkSince: (d) => `arrêtée ${d}`, blkHint: 'Ouvrez-la et écrivez l’étape suivante et qui la fait ; un commentaire réveille l’agent.', blkBubble: '⛔ bloqué', blkPc: 'Suggestion de Paperclip', etaTitle: 'Estimé d’après la durée des tâches terminées de cet agent ou d’après les sous-tâches', adDemoResult: 'Les sous-tâches à l’arrêt sont passées à un agent libre ; les deux ont démarré dans l’heure.', ciShow: 'Voir la demande de connexion', ciAsks: (n, svc) => `${n} a besoin d’une connexion : ${svc}`, ciBtn: 'Connecter', ciOpen: 'Connecter dans Paperclip', ciNote: 'La connexion se configure dans Paperclip (dans son propre onglet, pour la connexion) ; une fois connecté, l’agent reprend où il s’était arrêté.', adToTask: 'En faire une tâche', adAllToTask: 'Tout transformer en tâche', adAssignee: 'Agent', adPriority: 'Priorité', adTaskTitle: 'Titre', adCreate: 'Créer dans Paperclip', adCreating: 'Création…',
-      adCreated: (id) => `${id} créée`, adOff: 'La conversion des conseils en tâches est désactivée.', adTurnOn: 'Autoriser Cubicle à créer ces tâches dans Paperclip (sous-tâches de la tâche lente)', adOnlyHere: 'S’active depuis l’ordinateur où tourne Cubicle.',
-      adTaskName: (id, text) => `Accélérer ${id} : ${text}`, adTaskHead: 'Conseil d’accélération de Cubicle', adFor: 'Tâche', adTaskFinding: 'Constat', adTaskFix: 'Conseil', adTaskWhere: 'Concerne',
-      adTaskSource: (d) => `Établi par Cubicle le ${d} à partir des tâches, exécutions récentes et coûts de Paperclip.`, adPrios: { critical: 'Critique', high: 'Haute', medium: 'Moyenne', low: 'Basse' },
-      kpiNote: 'Les tâches créées par une personne, pas celles que les agents se créent entre eux. L’avancement vient des sous-tâches, ou du statut s’il n’y en a pas ; la date prévue suit le rythme actuel ou la durée habituelle d’une tâche dans cette entreprise.',
-      chat: 'Discuter', chatTitle: (n) => `Discuter avec ${n}`, chatNote: 'L’Agent Chat de Paperclip : posez une question sans donner de tâche. S’il est désactivé, activez-le dans Paperclip → Instance settings → Experimental.',
-      human: 'Votre bureau : les agents qui ont besoin de vous y font la queue', you: 'Vous', queue: (n) => `${n} vous attendent`, myLook: 'Mon apparence',
-      language: 'Langue', languageAuto: 'Langue du navigateur',
-      reply: 'Répondre', replyTitle: (n) => `${n} vous attend`, openInPaperclip: 'Ouvrir dans Paperclip ↗', replyNote: 'Vous répondez sur la page de Paperclip elle-même ; Cubicle reste en lecture seule.', close: 'Fermer', anim: 'Animation du bureau', cardsToggle: 'Cartes des agents', viewNote: 'Sans animation, les cartes montrent chaque agent à son bureau.',
-      openTask: 'Ouvrir la tâche', openRun: 'Ouvrir le journal d’exécution', looksName: 'Apparence et nom', lastFail: (a) => `Dernière exécution en échec · ${a}`, alias: 'Nom dans Cubicle', aliasHint: 'Seul Cubicle affiche ce nom ; Paperclip garde le sien.', renameInPaperclip: 'Renommer dans Paperclip ↗',
-      talk: {
-        doneA: (id) => `Je viens de terminer ${id}.`, doneB: 'Bravo. C’était compliqué ?', doneD: 'Parfait, une de moins sur le tableau.',
-        doneC: ['Quelques cas limites, mais les tests les ont vus.', 'Pas vraiment, le besoin était clair.', 'La relecture a pris plus de temps que le travail.'],
-        nextA: (n) => `Et toi, ${n}, c’est quoi la suite ?`, nextB: (id, t) => `${id} : ${t}.`, nextC: 'Ça marche. Fais-moi signe si tu as besoin d’aide.',
-        waitA: (n) => `${n} attend une réponse de la direction.`, waitB: (id) => (id ? `Pour ${id} ? J’espère qu’on lui répondra vite.` : 'J’espère qu’on lui répondra vite.'),
-        errA: (n) => `L’exécution de ${n} vient d’échouer.`, errB: 'Ça va réessayer. Sinon quelqu’un regardera les logs.',
-        busyA: (k) => `${k} d’entre nous sont concentrés en ce moment.`, busyB: 'Alors c’est le bon moment pour un café.',
-        roleA: (r) => `Comment ça se passe côté ${r} ?`, roleB: ['Chargé, mais ça va.', 'Calme aujourd’hui, pour une fois.', 'J’attends le prochain ticket.'],
-      },
-      record: 'Enregistrer une vidéo de 30 s', recording: (n) => `Enregistrement… ${n} s`, recordSaved: 'Vidéo enregistrée ✓', recordUnsupported: 'Ce navigateur ne peut pas enregistrer le bureau.',
-      logo: 'Logo de l’entreprise', logoPick: 'Importer un logo…', logoRemove: 'Retirer le logo',
-      exportLooks: 'Exporter l’apparence', importLooks: 'Importer l’apparence…',
-      editLook: 'Changer l’apparence', looks: 'Apparence', photo: 'Tête en photo', photoPick: 'Choisir une image…',
-      photoHint: 'Faites glisser l’image pour la déplacer, utilisez la molette ou le curseur pour zoomer, jusqu’à ce que le visage remplisse le cercle.', zoom: 'Zoom',
-      findFace: 'Trouver le visage', noFace: 'Aucun visage trouvé : placez le cercle à la main.', photoRemove: 'Retirer la photo',
-      hair: 'Cheveux', hairShort: 'Courts', hairLong: 'Longs', hairBun: 'Chignon', hairPony: 'Queue de cheval', hairCurly: 'Bouclés', hairBald: 'Chauve',
-      hairColor: 'Couleur des cheveux', skin: 'Peau', color: 'Couleur', clothes: 'Tenue', trousers: 'Pantalon', skirt: 'Jupe', shoes: 'Chaussures', flats: 'Plates', heels: 'Talons',
-      save: 'Enregistrer', cancel: 'Annuler', resetLook: 'Revenir au défaut',
-      lookServer: 'Enregistré sur la machine où tourne Cubicle : chaque écran de ce bureau l’affiche.', lookLocal: 'Enregistré dans ce navigateur. Exportez-le pour l’utiliser ailleurs.',
-      lookDenied: 'Seul un navigateur sur la machine où tourne Cubicle peut changer l’apparence. Enregistré dans ce navigateur pour l’instant.',
-      needsYouTitle: (n) => `${n} a besoin de vous`,
-      lastSteps: 'Dernières étapes', whatsNew: (v) => `Cubicle est passé en ${v}.`, whatsNewLink: 'Nouveautés', reloadNote: 'Cubicle a été mis à jour.', reloadBtn: 'Recharger la page', upNew: (v, cur) => `⬆ Cubicle ${v} est sorti (vous avez ${cur}).`, upHow: 'Pour mettre à jour :', upCopy: 'Copier', upCopied: 'Copié', upAuto: 'Il se met à jour tout seul dans un instant ; la page se recharge ensuite.', upAutoHint: 'Lancé avec --auto-update, Cubicle se met à jour tout seul.', upNow: 'Mettre à jour', upBusy: 'Mise à jour…', upDone: 'Mis à jour ; rechargement.', upErr: 'Impossible depuis ici. Lancez plutôt ceci :', upFail: 'Impossible depuis ici (il faut un administrateur de l’instance). Lancez ceci là où tourne Paperclip :',
-      pairs: [['Tu l’as fusionné ?', 'D’abord les tests. Toujours les tests d’abord.'], ['Café ou thé ?', 'Ce qui fait couler les tokens.'], ['Qui a cassé le build ?', 'Pas moi, j’étais en pause.'],
-        ['Grosse journée ?', 'Quarante appels d’outils, et ça continue.'], ['Des nouvelles de la direction ?', 'J’attends encore une validation.'], ['Joli bureau.', 'Il a deux écrans maintenant !']],
-      chatter: ['☕', 'pause café', '…', 'hum', 'et maintenant ?'],
-      hint: 'Les agents au travail sont assis à leur bureau et tapent ; les agents libres traînent dans le salon. Actualisé toutes les 4 s.',
-      demo: 'Mode démo avec des agents fictifs. Retirez <code>?demo</code> de l’adresse pour voir votre propre entreprise Paperclip.',
-      hosted: 'Ceci est la démo en ligne avec des agents fictifs. Pour voir vos propres agents, lancez <code>npx @caglarutkuguler/cubicle</code> et ouvrez <code>http://127.0.0.1:3200</code>, ou installez-le comme plugin Paperclip.',
-    },
-    zh: {
-      tgAccess: "谁可以使用机器人？",
-      tgAllowEveryone: "允许所有人",
-      tgAllowEveryoneHint: "与之前一样，任何知道配对码的人都可以关联聊天。",
-      tgRestrictedHint: "只有列表中的用户才能在私聊中配对、使用命令和接收通知。更改立即生效。",
-      tgUserId: "Telegram 用户 ID",
-      tgAddUser: "添加",
-      tgRemoveUser: "移除",
-      tgNoUsers: "列表为空。任何人都无法使用机器人或接收通知。",
-      tgLinkedUsers: "之前关联的用户",
-      tgUserInvalid: "请输入正整数 Telegram 用户 ID，而不是 @用户名。",
-      tgAccessFailed: "无法保存访问设置，请重试。",
-      connecting: '正在连接…', unreachable: '无法连接 Paperclip，正在重试…',
-      denied: (c) => `Paperclip 拒绝了访问（${c}）。如果 Paperclip 需要登录，请设置 PAPERCLIP_TOKEN，或检查密钥。`, feedUnreachable: '无法读取代理数据，正在重试…',
-      empty: '还没有代理。', emptyClaude: '还没有 Claude Code 会话。在任意文件夹里运行 <code>claude</code>，它就会走进来。',
-      noCompany: '还没有公司。', summary: (n, r) => `${n} 个代理 · ${r} 个在工作`,
-      running: '工作中', idle: '空闲', error: '出错', paused: '已暂停', waiting: '需要你', noTask: '没有分配的未完成任务',
-      done: '✓ 完成', errBubble: '⚠ 出错', waitBubble: '✋ 需要你',
-      asks: '正在等你回答：', needYou: (n) => `${n} 个需要你`, redacted: '🔒 详情已隐藏',
-      settings: '设置', theme: '主题', copyLink: '复制带这些设置的链接', copied: '已复制 ✓',
-      settingsNote: '保存在此浏览器中。链接可以把设置带到另一块屏幕（电视请加 ?kiosk）。',
-      spend: (a, b) => `本月 ${a} / ${b}`, spendNoBudget: (a) => `本月 ${a}`, spendTitle: 'Paperclip 报告的本月花费',
-      handoff: (id, to) => `${id} → ${to}`, replay: '回放',
-      notify: '代理需要我时显示桌面通知', notifyBlocked: '浏览器设置中已阻止此页面的通知。',
-      sound: '声音', soundOff: '关闭', soundNeed: '代理需要我时', soundAll: '需要我、完成和出错',
-      fps: '帧率', fpsAuto: '自动', fps30: '30 fps（较省）', fps15: '15 fps（最省）',
-      layout: '布局', layoutAuto: '自动（适应页面）', layoutSide: '办公室和卡片并排', layoutStack: '卡片在办公室下方',
-      openPaperclip: '在单独的标签页中打开 Paperclip', kpiTitle: '你分配的任务进度', kpi: '你分配的任务', kpiOpen: '进行中', kpiAvg: '平均进度', kpiDone7: '7 天内完成', kpiLead: '通常完成时间', kpiBlocked: '等待其他任务',
-      waitsOn1: (id) => `等待 ${id}`, waitsOnN: (n, id) => `等待 ${n} 个任务（${id}…）`, waitsSubs: (n) => `等待 ${n} 个子任务`, waitsYou: '在等你', stalled: (n) => `${n} 个停滞`,
-      sView: '显示', sAlerts: '提醒', sMore: '更多', sCopy: '复制链接', sLogo: '标志…', sNoLogo: '移除标志', sExport: '导出', sImport: '导入…', sRecord: '录制 30 秒', sPets: "宠物", petsNote: "在办公室里闲逛的小动物。点一下打个招呼。", petName: {"cat": "猫", "dog": "狗", "rabbit": "兔子", "robot": "扫地机器人"}, petSay: {"cat": "喵！", "dog": "汪！", "rabbit": "♥", "robot": "哔哔"}, sVoice: '语音（代理说话）', voiceNote: '浏览器用每个代理自己的声音朗读发生的事情。免费，浏览器自带；Cubicle 不会发送任何内容。有些浏览器需要先点一下页面。', voiceKinds: { wait: '需要我', start: '开始工作', done: '完成工作', err: '出错', chat: '聊天' }, voicePick: '朗读声音', voiceAuto: '自动（每个代理一个）', voiceNone: '这个浏览器没有该语言的声音。Edge 有自然语音；在 Windows 上安装语言包也会添加。', voiceOn: '语音已开启。',
-      say: { wait: (n, w) => `${n} 需要你${w ? '：' + w : ''}。`, start: (n, w) => `${n} 开始工作${w ? '：' + w : ''}。`, done: (n, w) => `${n} 完成了${w ? '：' + w : ''}。`, err: (n, w) => `${n} 出错了${w ? '：' + w : ''}。` },
-      voiceSex: "声音", voiceSexAuto: "按外观", female: "女声", male: "男声", voiceSexMode: "女声 / 男声", voiceSexLook: "按办公室里的外观", voiceSexMix: "混合（一男一女）", voiceSexF: "全部女声", voiceSexM: "全部男声", voiceF: "女声", voiceM: "男声", voiceNoF: "这个浏览器没有该语言的女声，女性代理也用同一个声音（有些浏览器会调高音调，Windows 上的 Chrome 不会）。Microsoft Edge 有自然女声。", openEdge: "在 Edge 中打开", voiceNoM: "这个浏览器没有该语言的男声，男性代理会用调低的女声说话。Microsoft Edge 有自然男声。", voiceTry: "试听", voiceTryF: "你好，这是女声。", voiceTryM: "你好，这是男声。", sHuman: '你的办公桌', sNotify: '桌面通知',
-      tgButton: '📨 Telegram…', tgIntro: '当代理需要你或运行失败时，手机上会收到带有代理和任务链接的消息，也可以随时询问办公室状态。',
-      tgCommands: '命令：/status、/waiting、/kpi、/office、/answer ID 文本、/mute 名称、/alerts all|questions|failures',
-      tg1: '创建机器人', tg1Text: '在 Telegram 中打开 @BotFather，进入 My Bots 并点“Create a New Bot”。给它起个名字和以“bot”结尾的用户名。BotFather 会发给你一个 token，形如 123456789:AAH… 的长字符串，复制它。',
-      tg2: '把 token 粘贴到这里', tgTokenPh: '例如 123456789:AAH…', tgSave: '保存', tgSaving: '正在检查…', tgBad: { format: '这看起来不像机器人 token。请复制 BotFather 发来的完整一行。', refused: 'Telegram 拒绝了这个 token。请从 BotFather 重新复制。', unreachable: '这台电脑连不上 Telegram，请检查网络。', url: '这不是网址；应以 http:// 或 https:// 开头。' },
-      tgBotOk: (u) => `✓ 已连接 ${u}`, tgRemove: '断开', tgFromEnv: 'token 已在服务器环境中设置。',
-      tg3: '关联你的 Telegram', tg3Text: '用手机相机扫描二维码，或点下面的按钮。机器人在 Telegram 中打开后，点“开始”。', tgOpenBot: '这台电脑上的 Telegram 应用', tgLinked: (n) => `✓ 已关联 ${n} 个聊天`, tgWaitStart: '等待你在 Telegram 中点“开始”…',
-      tg4: '可选：在 Telegram 中回复', tgRepliesLabel: '允许我通过回复消息来作答；我的回复会作为评论写到 Paperclip 任务上',
-      tgLocal: '只能在运行 Cubicle 的那台电脑上设置。', tgPhone: '链接在这台电脑上打开；要在手机上打开，请看第 5 步。',
-      tgOpenWeb: 'Telegram 网页版', tgScan: '用手机扫描', tgOrSend: '如果点“开始”没有反应，就给机器人发这条消息：', tgCopy: '复制', tgCopied: '已复制',
-      tgNoApp: 't.me 页面上的 “Start Bot” 按钮只有在这台电脑装了 Telegram 应用时才有用。否则请用手机或 Telegram 网页版。',
-      tgWrong: '机器人收到了消息，但没有正确的代码。请发送上面的消息。', tgPoll: { conflict: '另一个程序也在读取这个机器人（可能是 Paperclip 自己的 Telegram 连接）。请给 Cubicle 单独建一个机器人。', unreachable: '这台电脑连不上 Telegram。请检查网络连接。', refused: 'Telegram 拒绝了这个令牌。请断开后重新粘贴。' },
-      tg5: '可选：在手机上打开链接', tg5Text: '现在消息中的链接只能在这台电脑上打开。要在手机上打开，Cubicle 使用免费的 Tailscale：办公室只会在你自己的设备上打开。',
-      ts1: '在这台电脑上：从 tailscale.com/download 下载并安装 Tailscale。安装后会打开登录页面，用 Google、Microsoft 或 Apple 账号登录。', ts2: '在手机上：在 App Store 或 Google Play 搜索 “Tailscale” 并安装。打开后用与电脑相同的账号登录，系统询问时允许 VPN。', ts3: '回到这里，点“重新检查”。',
-      tsDownload: '下载 Tailscale', tsCheck: '重新检查', tsChecking: '正在检查…', tsOff: 'Tailscale 已安装但未连接。点任务栏（时钟旁）的 Tailscale 图标登录或点 “Connect”，然后重新检查。',
-      tsOn: (d) => `✓ Tailscale 正在这台电脑上运行（${d}）。`, tsServe: '在我的手机上打开办公室', tsServeNote: '只有登录你 Tailscale 账号的设备才能打开；设置和配对代码只留在这台电脑上。',
-      tsNoPhone: '你的 Tailscale 账号里还没有手机：在手机上安装 Tailscale，并用同一账号登录。', tsFail: 'Tailscale 没有接受。请在这台电脑上运行一次（PowerShell 或终端）：',
-      tsPhoneOn: '手机上的 Tailscale 应用必须开启（已连接）。', apBtn: '批准 / 拒绝', apWait: '等待你的批准', apShow: '查看审批请求', apAsks: (n) => `${n} 请求你的批准`, apRisks: '风险', apOpen: '在 Paperclip 中批准或拒绝', qShow: '查看问题', qAsks: (n) => `${n} 在问你`, pcAway: 'Paperclip 只能在它运行的那台电脑上打开。要在这里回答，请在 Telegram 中回复该代理的消息。', tsManual: '或者自己填写地址',
-      tgPhonePh: '例如 http://my-pc.tail1234.ts.net:3200', tgPhoneOk: (u) => `✓ 链接将在 ${u} 打开`, tgPhoneTry: '在手机上打开试试', tgPhoneFixed: '地址是在启动 Cubicle 时指定的（--public-url）。', tgPhoneClear: '移除',
-      tgEmbed: 'Telegram 机器人属于这台电脑上独立运行的 Cubicle，而不是 Paperclip 里的办公室。打开它，并在那里点 ⚙ → Telegram：', tgOpenStandalone: '打开 Cubicle',
-      iss: { backlog: '待办池', todo: '待办', in_progress: '进行中', in_review: '审核中', blocked: '受阻', done: '已完成', cancelled: '已取消' },
-      kpiTask: '任务', kpiWho: '代理', kpiProgress: '进度', kpiEta: '预计完成', kpiSub: (d, n) => `${d}/${n} 个子任务`, kpiOver: '已超过通常时间', kpiDone: '已完成', kpiShowDone: '显示已完成', kpiRefresh: '刷新', kpiEmpty: '还没有由人创建的任务。',
-      kpiStarted: '开始', kpiTook: '用时', kpiRunningFor: (d) => `已进行 ${d}`, kpiAllRoots: '也显示代理创建的任务', kpiExpand: '子任务', kpiAdvice: '如何加快',
-      adTitle: (id) => `如何加快 ${id}`, adLoading: '正在读取运行和成本…', adNone: '没有明显问题：没有等待你的事项、停滞的阻塞、重复失败或闲置的工作。',
-      adCost: (runs, time, cost) => `总计：${runs} 次运行，${time} 代理时间，${cost}。`, adFailShare: (p, n) => `最近 ${n} 次运行中有 ${p}% 失败。`,
-      adWaitsYou: (n, age) => `${n} 个任务在等你的回答或批准，最早的已等 ${age}`,
-      adWaitsYouFix: '你不决定就不会推进。请回复；对反复出现的决定，给代理授权或书面规则，让它不必再问。',
-      adFailQuota: (n) => `${n} 次运行因 AI 提供商的用量上限而停止`, adFailQuotaFix: '这些运行白白浪费并稍后重试。把工作分散到全天，减少同时运行的代理，优先关键任务，或为溢出增加第二个提供商或模型。',
-      adQuotaAll: (n, all) => `全公司最近 ${all} 次运行中有 ${n} 次因 AI 提供商的用量上限而停止`, adFailBig: (n) => `${n} 次运行无法启动：提示过大（E2BIG）`, adFailBigFix: '缩短任务描述和冗长的评论串，长文档用链接而不是粘贴，精简代理的指令文件。',
-      adFailTurn: (n) => `${n} 次运行在回合中途中断（终端、限制或服务错误）`, adFailTurnFix: '把工作拆成更小的步骤，避免在一个回合里运行长命令，并检查代理的时间和输出限制。',
-      adFailLost: (n) => `${n} 次运行丢失了进程`, adFailLostFix: '电脑或 WSL 在工作中休眠或重启。代理运行时请保持电脑唤醒。',
-      adFailOther: (n, code) => `${n} 次运行以 ${code} 失败`, adFailOtherFix: '打开其中一次查看原因；同样的失败反复出现需要改设置，而不是再试一次。',
-      adStalled: (n, chain) => `${n} 个任务在等待本身也已停滞的工作：${chain}`, adStalledFix: '先解开第一环：提高优先级或换代理；检查依赖是否真的必要，并立即开始独立的部分。',
-      adIdle: (n) => `${n} 个未完成任务超过一天没有动静`, adIdleFix: '唤醒它们的代理，或交给空闲的代理。',
-      adUnassigned: (n) => `${n} 个未完成任务没有代理`, adUnassignedFix: '指派一个代理；否则没人处理。',
-      adOverload: (name, n, free) => `${name} 手上有 ${n} 个未完成任务，而 ${free} 空闲`, adOverloadFix: '把一部分交给空闲代理，或增加一个同角色的代理。',
-      adLong: (ids, age, typ) => `${ids} 已开放最长 ${age}；这里类似任务约 ${typ} 完成`, adLongFix: '明确验收标准，把工作拆成可并行的小子任务。',
-      adChurn: (ids, n) => `${ids}：最近多达 ${n} 次运行，仍未完成`, adChurnFix: '代理可能在兜圈子：加上明确的完成条件，并检查是什么一直唤醒它（评论、评审）。',
-      adReview: (n, age) => `${n} 个任务在等评审，最早的已等 ${age}`, adReviewFix: '增加评审者或减轻其负担；低风险的改动可能不需要评审。',
-      adDoneTask: (id, when) => `${id} 已完成（${when}）`, adOpenTask: (id) => `${id} 仍未完成`, adStill: '数据中仍能看到这个问题。', adAgain: '再次转为任务', adEarlier: '之前的建议', adGone: '数据中已不再出现', adOutcome: '结果', etaAt: (t) => `预计 ${t}`, etaSubs: (d, n, per) => `根据子任务：${n} 个中已完成 ${d} 个${per ? `，目前每个约 ${per}` : '，按目前的速度'}`, etaLike: (n, rem) => `这里进行了这么久的任务，大约 ${rem} 后完成（${n} 个任务）`, etaRough: '这里很少有任务进行这么久；粗略估计：再过与已开放时间相当的时长', blk: { stalled: (o) => (o ? `卡住了：它等待的任务链停在 ${o}` : '卡住了，没有人会推动它'), unassigned: (o) => `在等 ${o || '一个任务'}，但那个任务没有负责人`, backlog: (o) => `在等 ${o || '一个任务'}，但那个任务还在待办`, uninvokable: (o) => `在等 ${o || '一个任务'}，但它的代理无法运行`, cancelled: (o) => `在等 ${o || '一个任务'}，但那个任务已取消`, review: (o) => `在等 ${o || '一个任务'} 的审核，但没人在审`, disposition: () => '运行已结束，但没人决定下一步', decision: () => '在等你的决定', external: () => '在等外部的人', recovery: (o) => `有一个恢复任务未完成${o ? `（${o}）` : ''}`, other: () => '被阻塞，需要有人处理' }, blkAsks: (n) => `${n} 卡住了`, blkShow: '为什么卡住', blkLook: '打开阻塞项', blkMore: (n) => `还有 ${n} 个卡住的任务`, blkSince: (d) => `停止于 ${d}`, blkHint: '打开它，写下下一步和由谁来做；评论会唤醒代理。', blkBubble: '⛔ 卡住', blkPc: 'Paperclip 的建议', etaTitle: '根据该代理已完成任务的用时或任务的子任务估算', adDemoResult: '闲置的子任务交给了一个空闲代理；两个都在一小时内开始了。', ciShow: '查看连接请求', ciAsks: (n, svc) => `${n} 需要一个连接：${svc}`, ciBtn: '连接', ciOpen: '在 Paperclip 中连接', ciNote: '连接在 Paperclip 中设置（在单独的标签页中打开以便登录）；连接后代理会从中断处继续。', adToTask: '转为任务', adAllToTask: '全部转为任务', adAssignee: '代理', adPriority: '优先级', adTaskTitle: '标题', adCreate: '在 Paperclip 中创建', adCreating: '正在创建…',
-      adCreated: (id) => `已创建 ${id}`, adOff: '将建议转为任务的功能已关闭。', adTurnOn: '允许 Cubicle 在 Paperclip 中创建这些任务（作为慢任务的子任务）', adOnlyHere: '需在运行 Cubicle 的电脑上开启。',
-      adTaskName: (id, text) => `加快 ${id}：${text}`, adTaskHead: '来自 Cubicle 的加速建议', adFor: '任务', adTaskFinding: '发现', adTaskFix: '建议', adTaskWhere: '涉及',
-      adTaskSource: (d) => `由 Cubicle 于 ${d} 根据 Paperclip 的任务、最近运行和成本得出。`, adPrios: { critical: '紧急', high: '高', medium: '中', low: '低' },
-      kpiNote: '由人创建的任务，不包括代理之间互相创建的任务。进度来自子任务，没有子任务时按状态估算；预计完成时间按目前的速度，或按这家公司任务通常需要的时间推算。',
-      chat: '聊天', chatTitle: (n) => `与 ${n} 聊天`, chatNote: 'Paperclip 的 Agent Chat：不分配任务也能提问。如果提示已禁用，请在 Paperclip → Instance settings → Experimental 中开启。',
-      human: '你的办公桌：需要你的代理在这里排队', you: '你', queue: (n) => `${n} 个在等你`, myLook: '我的外观',
-      language: '语言', languageAuto: '浏览器语言',
-      reply: '回复', replyTitle: (n) => `${n} 在等你`, openInPaperclip: '在 Paperclip 中打开 ↗', replyNote: '你在 Paperclip 自己的页面上回复；Cubicle 本身仍然只读。', close: '关闭', anim: '办公室动画', cardsToggle: '代理卡片', viewNote: '关闭动画时，卡片会显示每个代理坐在自己的桌前。',
-      openTask: '打开任务', openRun: '打开运行日志', looksName: '外观和名称', lastFail: (a) => `上次运行失败 · ${a}`, alias: 'Cubicle 中的名称', aliasHint: '只有 Cubicle 显示这个名称；Paperclip 保留自己的名称。', renameInPaperclip: '在 Paperclip 中重命名 ↗',
-      talk: {
-        doneA: (id) => `我刚完成了 ${id}。`, doneB: '干得好。难吗？', doneD: '好，看板上又少了一个。',
-        doneC: ['有几个边界情况，不过测试都发现了。', '还好，需求很清楚。', '评审比干活还久。'],
-        nextA: (n) => `${n}，你接下来做什么？`, nextB: (id, t) => `${id}：${t}。`, nextC: '不错。需要帮忙就喊我。',
-        waitA: (n) => `${n} 在等董事会的答复。`, waitB: (id) => (id ? `是 ${id} 吗？希望很快有人回复。` : '希望很快有人回复。'),
-        errA: (n) => `${n} 的运行刚刚失败了。`, errB: '会自动重试的。不行的话会有人看日志。',
-        busyA: (k) => `现在有 ${k} 个人在埋头干活。`, busyB: '那正好去喝杯咖啡。',
-        roleA: (r) => `${r} 那边最近怎么样？`, roleB: ['挺忙，但还好。', '今天难得清闲。', '在等下一个任务。'],
-      },
-      record: '录制 30 秒视频', recording: (n) => `录制中… ${n} 秒`, recordSaved: '视频已保存 ✓', recordUnsupported: '此浏览器无法录制办公室。',
-      logo: '公司标志', logoPick: '上传标志…', logoRemove: '移除标志',
-      exportLooks: '导出外观', importLooks: '导入外观…',
-      editLook: '更改外观', looks: '外观', photo: '照片头像', photoPick: '选择图片…',
-      photoHint: '拖动图片移动，滚动或使用滑块缩放，直到脸部填满圆圈。', zoom: '缩放',
-      findFace: '查找人脸', noFace: '没有找到人脸：请手动放置圆圈。', photoRemove: '移除照片',
-      hair: '头发', hairShort: '短发', hairLong: '长发', hairBun: '发髻', hairPony: '马尾', hairCurly: '卷发', hairBald: '光头',
-      hairColor: '发色', skin: '肤色', color: '颜色', clothes: '服装', trousers: '长裤', skirt: '裙子', shoes: '鞋子', flats: '平底', heels: '高跟',
-      save: '保存', cancel: '取消', resetLook: '恢复默认',
-      lookServer: '保存在运行 Cubicle 的电脑上，这个办公室的每块屏幕都会显示。', lookLocal: '保存在此浏览器中。导出后可在其他浏览器使用。',
-      lookDenied: '只有运行 Cubicle 的电脑上的浏览器才能更改外观。暂时保存在此浏览器中。',
-      needsYouTitle: (n) => `${n} 需要你`,
-      lastSteps: '最近步骤', whatsNew: (v) => `Cubicle 已更新到 ${v}。`, whatsNewLink: '更新内容', reloadNote: 'Cubicle 已更新。', reloadBtn: '重新加载页面', upNew: (v, cur) => `⬆ Cubicle ${v} 已发布（你的是 ${cur}）。`, upHow: '更新方法：', upCopy: '复制', upCopied: '已复制', upAuto: '稍后会自动更新，然后页面会重新加载。', upAutoHint: '用 --auto-update 启动 Cubicle，它会自动更新。', upNow: '立即更新', upBusy: '正在更新…', upDone: '已更新，正在重新加载。', upErr: '无法在这里更新。请改为运行：', upFail: '无法在这里更新（需要实例管理员）。请在运行 Paperclip 的地方执行：',
-      pairs: [['合并了吗？', '先跑测试。永远先跑测试。'], ['咖啡还是茶？', '能让 token 流动的都行。'], ['谁把构建弄坏了？', '不是我，我在休息区。'],
-        ['今天忙吗？', '已经四十次工具调用了。'], ['董事会有消息吗？', '还在等一个批准。'], ['桌子不错。', '现在有两台显示器了！']],
-      chatter: ['☕', '喝杯咖啡', '…', '嗯', '下一个是什么？'],
-      hint: '工作中的代理坐在桌前打字，空闲的代理在休息区闲逛。每 4 秒刷新一次。',
-      demo: '演示模式：虚构的代理。从地址中去掉 <code>?demo</code> 即可查看你自己的 Paperclip 公司。',
-      hosted: '这是使用虚构代理的在线演示。要查看你自己的代理，请运行 <code>npx @caglarutkuguler/cubicle</code> 并打开 <code>http://127.0.0.1:3200</code>，或将其安装为 Paperclip 插件。',
-    },
-    ar: {
-      tgAccess: "من يمكنه استخدام البوت؟",
-      tgAllowEveryone: "السماح للجميع",
-      tgAllowEveryoneHint: "كما في السابق، يمكن لأي شخص لديه رمز الربط ربط دردشة.",
-      tgRestrictedHint: "يمكن للمستخدمين في القائمة فقط الربط واستخدام الأوامر وتلقي الإشعارات في الدردشات الخاصة. تُطبّق التغييرات فورًا.",
-      tgUserId: "معرّف مستخدم Telegram",
-      tgAddUser: "إضافة",
-      tgRemoveUser: "إزالة",
-      tgNoUsers: "القائمة فارغة. لا يمكن لأحد استخدام البوت أو تلقي الإشعارات.",
-      tgLinkedUsers: "المستخدمون المرتبطون سابقًا",
-      tgUserInvalid: "أدخل معرّف مستخدم Telegram كرقم موجب، وليس @اسم_مستخدم.",
-      tgAccessFailed: "تعذّر حفظ إعدادات الوصول. يُرجى المحاولة مجددًا.",
-      connecting: 'جارٍ الاتصال…', unreachable: 'تعذّر الوصول إلى Paperclip، جارٍ إعادة المحاولة…',
-      denied: (c) => `رفض Paperclip الوصول (${c}). اضبط PAPERCLIP_TOKEN إذا كان Paperclip يتطلب تسجيل الدخول، أو تحقّق من المفتاح.`, feedUnreachable: 'تعذّرت قراءة بيانات الوكلاء، جارٍ إعادة المحاولة…',
-      empty: 'لا يوجد وكلاء بعد.', emptyClaude: 'لا توجد جلسات Claude Code بعد. شغّل <code>claude</code> في أي مجلد وسيدخل المكتب.',
-      noCompany: 'لا توجد شركة بعد.', summary: (n, r) => `${n} وكلاء · ${r} يعملون`,
-      running: 'يعمل', idle: 'متفرغ', error: 'خطأ', paused: 'متوقف', waiting: 'يحتاجك', noTask: 'لا توجد مهمة مفتوحة مسندة',
-      done: '✓ تم', errBubble: '⚠ خطأ', waitBubble: '✋ يحتاجك',
-      asks: 'ينتظر إجابتك على', needYou: (n) => `${n} يحتاجونك`, redacted: '🔒 التفاصيل مخفية',
-      settings: 'الإعدادات', theme: 'السمة', copyLink: 'نسخ رابط بهذه الإعدادات', copied: 'تم النسخ ✓',
-      settingsNote: 'تُحفظ في هذا المتصفح. الرابط ينقلها إلى شاشة أخرى (أضف ?kiosk للتلفاز).',
-      spend: (a, b) => `${a} / ${b} هذا الشهر`, spendNoBudget: (a) => `${a} هذا الشهر`, spendTitle: 'إنفاق هذا الشهر كما يذكره Paperclip',
-      handoff: (id, to) => `${id} ← ${to}`, replay: 'إعادة تشغيل',
-      notify: 'إشعار على سطح المكتب عندما يحتاجني وكيل', notifyBlocked: 'الإشعارات محظورة لهذه الصفحة في إعدادات المتصفح.',
-      sound: 'الصوت', soundOff: 'إيقاف', soundNeed: 'عندما يحتاجني وكيل', soundAll: 'يحتاجني، انتهى، وأخطاء',
-      fps: 'معدل الإطارات', fpsAuto: 'تلقائي', fps30: '30 إطارًا (أخف)', fps15: '15 إطارًا (الأخف)',
-      layout: 'التخطيط', layoutAuto: 'تلقائي (ملاءمة الصفحة)', layoutSide: 'المكتب والبطاقات جنبًا إلى جنب', layoutStack: 'البطاقات أسفل المكتب',
-      openPaperclip: 'افتح Paperclip في علامة تبويب مستقلة', kpiTitle: 'تقدم المهام التي أسندتها', kpi: 'المهام التي أسندتها', kpiOpen: 'مفتوحة', kpiAvg: 'متوسط التقدم', kpiDone7: 'أُنجزت خلال 7 أيام', kpiLead: 'المدة المعتادة', kpiBlocked: 'تنتظر مهام أخرى',
-      waitsOn1: (id) => `ينتظر ${id}`, waitsOnN: (n, id) => `ينتظر ${n} مهام (${id}…)`, waitsSubs: (n) => `ينتظر ${n} مهام فرعية`, waitsYou: 'ينتظرك', stalled: (n) => `${n} متعثرة`,
-      sView: 'العرض', sAlerts: 'التنبيهات', sMore: 'المزيد', sCopy: 'انسخ الرابط', sLogo: 'الشعار…', sNoLogo: 'أزل الشعار', sExport: 'تصدير', sImport: 'استيراد…', sRecord: 'فيديو 30 ث', sPets: "حيوانات أليفة", petsNote: "حيوانات تتجول في المكتب. انقر على أحدها لتحيّيه.", petName: {"cat": "قطة", "dog": "كلب", "rabbit": "أرنب", "robot": "مكنسة روبوت"}, petSay: {"cat": "مياو!", "dog": "هاو!", "rabbit": "♥", "robot": "بيب بوب"}, sVoice: 'الصوت (الوكلاء يتكلمون)', voiceNote: 'يقرأ المتصفح ما يحدث بصوت خاص لكل وكيل. مجاني ومدمج في المتصفح؛ لا يرسل Cubicle أي شيء. بعض المتصفحات تطلب نقرة على الصفحة أولًا.', voiceKinds: { wait: 'يحتاجونني', start: 'يبدؤون العمل', done: 'أنهوا العمل', err: 'الأخطاء', chat: 'المحادثات' }, voicePick: 'الصوت المتحدث', voiceAuto: 'تلقائي (صوت لكل وكيل)', voiceNone: 'لا يوجد في هذا المتصفح صوت لهذه اللغة. في Edge أصوات طبيعية؛ وفي Windows تضيف حزمة اللغة صوتًا.', voiceOn: 'الصوت مُفعّل.',
-      say: { wait: (n, w) => `${n} يحتاجك${w ? ': ' + w : ''}.`, start: (n, w) => `${n} بدأ العمل${w ? ': ' + w : ''}.`, done: (n, w) => `${n} أنهى العمل${w ? ': ' + w : ''}.`, err: (n, w) => `${n} واجه خطأ${w ? ': ' + w : ''}.` },
-      voiceSex: "الصوت", voiceSexAuto: "حسب المظهر", female: "أنثى", male: "ذكر", voiceSexMode: "نساء / رجال", voiceSexLook: "حسب مظهرهم في المكتب", voiceSexMix: "مختلط (واحد بواحد)", voiceSexF: "الجميع بصوت امرأة", voiceSexM: "الجميع بصوت رجل", voiceF: "صوت امرأة", voiceM: "صوت رجل", voiceNoF: "لا يوجد في هذا المتصفح صوت امرأة لهذه اللغة؛ تتحدث النساء بالصوت نفسه (بعض المتصفحات ترفع نبرته، وChrome على Windows لا يفعل). في Microsoft Edge أصوات نسائية طبيعية.", openEdge: "افتح في Edge", voiceNoM: "لا يوجد في هذا المتصفح صوت رجل لهذه اللغة؛ يتحدث الرجال بصوت المرأة بنبرة أخفض. في Microsoft Edge أصوات رجالية طبيعية.", voiceTry: "جرّب", voiceTryF: "مرحبًا، هذا صوت امرأة.", voiceTryM: "مرحبًا، هذا صوت رجل.", sHuman: 'مكتبك', sNotify: 'إشعار سطح المكتب',
-      tgButton: '📨 Telegram…', tgIntro: 'تصلك رسالة على هاتفك عندما يحتاجك وكيل أو يفشل تشغيل، مع روابط للوكيل والمهمة، ويمكنك سؤال المكتب عن حاله.',
-      tgCommands: 'الأوامر: ‎/status ‎/waiting ‎/kpi ‎/office ‎/answer ID نص ‎/mute اسم ‎/alerts all|questions|failures',
-      tg1: 'أنشئ بوتًا', tg1Text: 'في Telegram افتح ‎@BotFather، وادخل My Bots واضغط «Create a New Bot». أعطه اسمًا واسم مستخدم ينتهي بـ «bot». سيرسل لك BotFather رمزًا (token) طويلًا مثل 123456789:AAH…؛ انسخه.',
-      tg2: 'الصق الرمز هنا', tgTokenPh: 'مثال: 123456789:AAH…', tgSave: 'حفظ', tgSaving: 'جارٍ التحقق…', tgBad: { format: 'لا يبدو هذا رمز بوت. انسخ السطر كاملًا من BotFather.', refused: 'رفض Telegram هذا الرمز. انسخه مجددًا من BotFather.', unreachable: 'تعذر الوصول إلى Telegram من هذا الحاسوب. تحقق من الاتصال بالإنترنت.', url: 'هذا ليس عنوان ويب؛ يجب أن يبدأ بـ http:// أو https://.' },
-      tgBotOk: (u) => `✓ متصل بـ ${u}`, tgRemove: 'قطع الاتصال', tgFromEnv: 'الرمز محدد في بيئة الخادم.',
-      tg3: 'اربط Telegram الخاص بك', tg3Text: 'امسح الرمز بكاميرا الهاتف، أو استخدم أحد الأزرار. عندما يفتح البوت في Telegram اضغط «ابدأ».', tgOpenBot: 'تطبيق Telegram على هذا الحاسوب', tgLinked: (n) => `✓ ${n} دردشة مرتبطة`, tgWaitStart: 'بانتظار ضغطك على «ابدأ» في Telegram…',
-      tg4: 'اختياري: الرد من Telegram', tgRepliesLabel: 'دعني أجيب بالرد على الرسالة؛ ويُكتب ردي تعليقًا على مهمة Paperclip',
-      tgLocal: 'يتم الإعداد فقط على الحاسوب الذي يعمل عليه Cubicle.', tgPhone: 'تُفتح الروابط على هذا الحاسوب؛ لفتحها على الهاتف راجع الخطوة 5.',
-      tgOpenWeb: 'Telegram Web', tgScan: 'امسحه بالهاتف', tgOrSend: 'إذا لم يفعل «ابدأ» شيئًا، أرسل إلى البوت هذه الرسالة:', tgCopy: 'نسخ', tgCopied: 'تم النسخ',
-      tgNoApp: 'زر «Start Bot» في صفحة t.me يعمل فقط إذا كان تطبيق Telegram مثبتًا على هذا الحاسوب. وإلا فاستخدم الهاتف أو Telegram Web.',
-      tgWrong: 'وصلت إلى البوت رسالة لكن بدون الرمز الصحيح. أرسل الرسالة أعلاه.', tgPoll: { conflict: 'برنامج آخر يقرأ هذا البوت (ربما اتصال Telegram الخاص بـ Paperclip). أعطِ Cubicle بوتًا خاصًا به.', unreachable: 'لا يمكن الوصول إلى Telegram من هذا الحاسوب. تحقق من اتصال الإنترنت.', refused: 'رفض Telegram الرمز المميز. افصل البوت والصقه من جديد.' },
-      tg5: 'اختياري: فتح الروابط على الهاتف', tg5Text: 'حاليًا تُفتح الروابط في الرسائل على هذا الحاسوب فقط. لفتحها على الهاتف يستخدم Cubicle خدمة Tailscale المجانية، فيُفتح المكتب على أجهزتك أنت فقط.',
-      ts1: 'على هذا الحاسوب: نزّل Tailscale من tailscale.com/download وثبّته. ستُفتح بعدها صفحة تسجيل دخول؛ سجّل الدخول بحساب Google أو Microsoft أو Apple.', ts2: 'على الهاتف: ابحث عن «Tailscale» في App Store أو Google Play وثبّته. افتحه وسجّل الدخول بالحساب نفسه المستخدم على الحاسوب، واسمح بالـ VPN عند السؤال.', ts3: 'عد إلى هنا واضغط «تحقق مجددًا».',
-      tsDownload: 'تنزيل Tailscale', tsCheck: 'تحقق مجددًا', tsChecking: 'جارٍ التحقق…', tsOff: 'Tailscale مثبّت لكنه غير متصل. اضغط أيقونة Tailscale في شريط المهام (بجانب الساعة) وسجّل الدخول أو اضغط «Connect»، ثم تحقق مجددًا.',
-      tsOn: (d) => `✓ يعمل Tailscale على هذا الحاسوب (${d}).`, tsServe: 'افتح المكتب على هاتفي', tsServeNote: 'لا يفتحه إلا الأجهزة المسجّلة في حساب Tailscale الخاص بك؛ وتبقى الإعدادات ورمز الربط على هذا الحاسوب.',
-      tsNoPhone: 'لا يوجد هاتف في حساب Tailscale بعد: ثبّت Tailscale على الهاتف وسجّل الدخول بالحساب نفسه.', tsFail: 'لم يقبل Tailscale ذلك. شغّل هذا الأمر مرة واحدة على هذا الحاسوب (PowerShell أو Terminal):',
-      tsPhoneOn: 'يجب أن يكون تطبيق Tailscale على الهاتف قيد التشغيل (متصلًا).', apBtn: 'وافق / ارفض', apWait: 'ينتظر موافقتك', apShow: 'عرض طلب الموافقة', apAsks: (n) => `${n} يطلب موافقتك`, apRisks: 'المخاطر', apOpen: 'وافق أو ارفض في Paperclip', qShow: 'عرض السؤال', qAsks: (n) => `${n} يسألك`, pcAway: 'لا يُفتح Paperclip إلا على الحاسوب الذي يعمل عليه. للرد من هنا، ردّ على رسالة الوكيل في Telegram.', tsManual: 'أو اكتب عنوانًا بنفسك',
-      tgPhonePh: 'مثال: http://my-pc.tail1234.ts.net:3200', tgPhoneOk: (u) => `✓ تُفتح الروابط على ${u}`, tgPhoneTry: 'افتحه على الهاتف للتجربة', tgPhoneFixed: 'تم تحديد العنوان عند تشغيل Cubicle (--public-url).', tgPhoneClear: 'إزالة',
-      tgEmbed: 'بوت Telegram تابع لـ Cubicle المستقل على هذا الحاسوب، لا للمكتب داخل Paperclip. افتحه واضغط هناك ⚙ ← Telegram:', tgOpenStandalone: 'افتح Cubicle',
-      iss: { backlog: 'قائمة الانتظار', todo: 'للتنفيذ', in_progress: 'قيد التنفيذ', in_review: 'قيد المراجعة', blocked: 'متوقفة', done: 'منجزة', cancelled: 'ملغاة' },
-      kpiTask: 'المهمة', kpiWho: 'الوكيل', kpiProgress: 'التقدم', kpiEta: 'الموعد المتوقع', kpiSub: (d, n) => `${d}/${n} مهام فرعية`, kpiOver: 'تجاوزت المدة المعتادة', kpiDone: 'أُنجزت', kpiShowDone: 'اعرض المنجزة', kpiRefresh: 'تحديث', kpiEmpty: 'لا توجد مهام من أشخاص بعد.',
-      kpiStarted: 'البدء', kpiTook: 'المدة', kpiRunningFor: (d) => `منذ ${d}`, kpiAllRoots: 'ومهام أنشأها الوكلاء', kpiExpand: 'المهام الفرعية', kpiAdvice: 'كيف تتسارع',
-      adTitle: (id) => `كيف تتسارع ${id}`, adLoading: 'جارٍ قراءة التشغيلات والتكاليف…', adNone: 'لا شيء لافت: لا انتظار لك، ولا عوائق متوقفة، ولا إخفاقات متكررة، ولا عمل متوقف.',
-      adCost: (runs, time, cost) => `الإجمالي: ${runs} تشغيلًا، ${time} من وقت الوكلاء، ${cost}.`, adFailShare: (p, n) => `فشل ${p}% من آخر ${n} تشغيلًا.`,
-      adWaitsYou: (n, age) => `${n} مهمة تنتظر ردك أو موافقتك، أقدمها منذ ${age}`,
-      adWaitsYouFix: 'لا شيء يتقدم قبل قرارك. أجب، وللقرارات المتكررة امنح الوكيل الصلاحية أو قاعدة مكتوبة كي لا يسأل.',
-      adFailQuota: (n) => `توقف ${n} تشغيلًا عند حد استخدام مزود الذكاء الاصطناعي`, adFailQuotaFix: 'تضيع هذه التشغيلات وتُعاد لاحقًا. وزّع العمل على اليوم، وشغّل وكلاء أقل في الوقت نفسه، وقدّم المهام الحرجة، أو أضف مزودًا أو نموذجًا ثانيًا.',
-      adQuotaAll: (n, all) => `على مستوى الشركة، توقف ${n} من آخر ${all} تشغيلًا عند حد استخدام مزود الذكاء الاصطناعي`, adFailBig: (n) => `تعذر بدء ${n} تشغيلًا: الموجّه كبير جدًا (E2BIG)`, adFailBigFix: 'اختصر أوصاف المهام وسلاسل التعليقات الطويلة، واربط المستندات الطويلة بدل لصقها، وقلّص ملفات تعليمات الوكيل.',
-      adFailTurn: (n) => `انقطع ${n} تشغيلًا في منتصف الدور (طرفية أو حد أو خدمة)`, adFailTurnFix: 'قسّم العمل إلى خطوات أصغر، وتجنب الأوامر الطويلة في دور واحد، وراجع حدود الوقت والمخرجات.',
-      adFailLost: (n) => `فقد ${n} تشغيلًا عمليته`, adFailLostFix: 'دخل الحاسوب أو WSL في السكون أو أعيد تشغيله. أبقه مستيقظًا أثناء عمل الوكلاء.',
-      adFailOther: (n, code) => `فشل ${n} تشغيلًا بالرمز ${code}`, adFailOtherFix: 'افتح أحدها لمعرفة السبب؛ تكرار الفشل نفسه يحتاج إلى تغيير إعداد لا إلى محاولة أخرى.',
-      adStalled: (n, chain) => `${n} مهمة تنتظر عملًا متوقفًا هو أيضًا: ${chain}`, adStalledFix: 'افكك الحلقة الأولى: امنحها الأولوية أو وكيلًا آخر، وتحقق من ضرورة الاعتماد، وابدأ الأجزاء المستقلة الآن.',
-      adIdle: (n) => `${n} مهمة مفتوحة بلا نشاط منذ أكثر من يوم`, adIdleFix: 'أيقظ وكلاءها أو أسندها إلى وكلاء متفرغين.',
-      adUnassigned: (n) => `${n} مهمة مفتوحة بلا وكيل`, adUnassignedFix: 'أسند وكيلًا؛ وإلا فلن يعمل عليها أحد.',
-      adOverload: (name, n, free) => `لدى ${name} ‏${n} مهام مفتوحة بينما ${free} متفرغون`, adOverloadFix: 'أسند بعضها إلى المتفرغين أو أضف وكيلًا ثانيًا بالدور نفسه.',
-      adLong: (ids, age, typ) => `${ids} مفتوحة حتى ${age}؛ والمهام المماثلة هنا تنتهي في نحو ${typ}`, adLongFix: 'اجعل معايير القبول محددة وقسّم العمل إلى مهام فرعية أصغر تسير بالتوازي.',
-      adChurn: (ids, n) => `${ids}: حتى ${n} تشغيلًا مؤخرًا وما زالت مفتوحة`, adChurnFix: 'ربما يدور الوكيل في حلقة: أضف شرط إنهاء واضحًا وتحقق مما يوقظه باستمرار (تعليقات، مراجعات).',
-      adReview: (n, age) => `${n} مهمة تنتظر المراجعة، أقدمها منذ ${age}`, adReviewFix: 'أضف مراجعًا أو خفف عبئه؛ قد لا تحتاج التغييرات منخفضة المخاطر إلى مراجعة.',
-      adDoneTask: (id, when) => `اكتملت ${id} (${when})`, adOpenTask: (id) => `${id} ما زالت مفتوحة`, adStill: 'ما زالت المشكلة تظهر في البيانات.', adAgain: 'حوّلها إلى مهمة مجددًا', adEarlier: 'نصائح سابقة', adGone: 'لم تعد تظهر في البيانات', adOutcome: 'النتيجة', etaAt: (t) => `متوقع ${t}`, etaSubs: (d, n, per) => `من مهامها الفرعية: أُنجز ${d} من ${n}${per ? `، نحو ${per} لكل منها حتى الآن` : ' بالوتيرة الحالية'}`, etaLike: (n, rem) => `المهام التي استمرت هنا هذه المدة انتهت بعد نحو ${rem} (${n} مهمة)`, etaRough: 'قليلة هي المهام التي استمرت هنا هذه المدة؛ تقدير تقريبي: مدة مماثلة لما مضى على فتحها', blk: { stalled: (o) => (o ? `متعثرة: توقفت السلسلة التي تنتظرها عند ${o}` : 'متعثرة، ولا شيء سيحركها'), unassigned: (o) => `تنتظر ${o || 'مهمة'} ليس لها مسؤول`, backlog: (o) => `تنتظر ${o || 'مهمة'} ما زالت في قائمة الانتظار`, uninvokable: (o) => `تنتظر ${o || 'مهمة'} لا يستطيع وكيلها العمل`, cancelled: (o) => `تنتظر ${o || 'مهمة'} أُلغيت`, review: (o) => `تنتظر مراجعة ${o || 'مهمة'} لا يراجعها أحد`, disposition: () => 'انتهى التشغيل لكن لم يقرر أحد الخطوة التالية', decision: () => 'تنتظر قرارك', external: () => 'تنتظر شخصًا من الخارج', recovery: (o) => `مهمة استرداد مفتوحة${o ? ` (${o})` : ''}`, other: () => 'محظورة وتحتاج إلى من يتابعها' }, blkAsks: (n) => `${n} متعثر`, blkShow: 'لماذا تعثر', blkLook: 'افتح العائق', blkMore: (n) => `${n} مهام متعثرة أخرى`, blkSince: (d) => `متوقفة ${d}`, blkHint: 'افتحها واكتب الخطوة التالية ومن سيقوم بها؛ التعليق يوقظ الوكيل.', blkBubble: '⛔ متعثر', blkPc: 'اقتراح Paperclip', etaTitle: 'تقدير بحسب مدة المهام المنتهية لهذا الوكيل أو بحسب المهام الفرعية', adDemoResult: 'أُسندت المهام الفرعية المتوقفة إلى وكيل متفرغ؛ وبدأت كلتاهما خلال ساعة.', ciShow: 'عرض طلب الاتصال', ciAsks: (n, svc) => `يحتاج ${n} إلى اتصال: ${svc}`, ciBtn: 'اتصل', ciOpen: 'اتصل في Paperclip', ciNote: 'يُعد الاتصال في Paperclip (يُفتح في علامة تبويب مستقلة لتسجيل الدخول)؛ وبعد الاتصال يتابع الوكيل من حيث توقف.', adToTask: 'حوّلها إلى مهمة', adAllToTask: 'حوّل الكل إلى مهمة', adAssignee: 'الوكيل', adPriority: 'الأولوية', adTaskTitle: 'العنوان', adCreate: 'أنشئ في Paperclip', adCreating: 'جارٍ الإنشاء…',
-      adCreated: (id) => `أُنشئت ${id}`, adOff: 'تحويل النصائح إلى مهام متوقف.', adTurnOn: 'اسمح لـ Cubicle بإنشاء هذه المهام في Paperclip (مهام فرعية للمهمة البطيئة)', adOnlyHere: 'يُفعّل من الحاسوب الذي يعمل عليه Cubicle.',
-      adTaskName: (id, text) => `تسريع ${id}: ${text}`, adTaskHead: 'نصيحة تسريع من Cubicle', adFor: 'المهمة', adTaskFinding: 'الملاحظة', adTaskFix: 'النصيحة', adTaskWhere: 'تخص',
-      adTaskSource: (d) => `استخلصها Cubicle في ${d} من مهام Paperclip وتشغيلاته الأخيرة وتكاليفه.`, adPrios: { critical: 'حرجة', high: 'عالية', medium: 'متوسطة', low: 'منخفضة' },
-      kpiNote: 'المهام التي أنشأها شخص، لا التي ينشئها الوكلاء لبعضهم. يُحسب التقدم من المهام الفرعية، أو من الحالة إن لم توجد؛ ويُقدَّر الموعد من الوتيرة حتى الآن أو من المدة المعتادة لمهمة في هذه الشركة.',
-      chat: 'دردشة', chatTitle: (n) => `دردشة مع ${n}`, chatNote: 'ميزة Agent Chat في Paperclip: اسأل دون إسناد مهمة. إن ظهرت معطلة ففعّلها من Paperclip ← Instance settings ← Experimental.',
-      human: 'مكتبك: يصطف عنده الوكلاء الذين يحتاجونك', you: 'أنت', queue: (n) => `${n} ينتظرونك`, myLook: 'مظهري',
-      language: 'اللغة', languageAuto: 'لغة المتصفح',
-      reply: 'رد', replyTitle: (n) => `${n} ينتظرك`, openInPaperclip: 'افتح في Paperclip ↗', replyNote: 'تجيب من صفحة Paperclip نفسها؛ ويبقى Cubicle للقراءة فقط.', close: 'إغلاق', anim: 'حركة المكتب', cardsToggle: 'بطاقات الوكلاء', viewNote: 'عند إيقاف الحركة، تعرض البطاقات كل وكيل على مكتبه.',
-      openTask: 'افتح المهمة', openRun: 'افتح سجل التشغيل', looksName: 'المظهر والاسم', lastFail: (a) => `فشل التشغيل الأخير · ${a}`, alias: 'الاسم في Cubicle', aliasHint: 'يظهر هذا الاسم في Cubicle فقط؛ ويحتفظ Paperclip باسمه.', renameInPaperclip: 'أعد التسمية في Paperclip ↗',
-      talk: {
-        doneA: (id) => `أنهيت ${id} للتو.`, doneB: 'أحسنت. هل كان صعبًا؟', doneD: 'جيد، مهمة أقل على اللوحة.',
-        doneC: ['بعض الحالات الحدّية، لكن الاختبارات كشفتها.', 'ليس حقًا، كان المطلوب واضحًا.', 'المراجعة أخذت وقتًا أطول من العمل.'],
-        nextA: (n) => `ما التالي لديك يا ${n}؟`, nextB: (id, t) => `${id}: ${t}.`, nextC: 'رائع. نادني إن احتجت مساعدة.',
-        waitA: (n) => `${n} ينتظر ردًا من الإدارة.`, waitB: (id) => (id ? `بخصوص ${id}؟ أتمنى أن يرد أحد قريبًا.` : 'أتمنى أن يرد أحد قريبًا.'),
-        errA: (n) => `فشل تشغيل ${n} للتو.`, errB: 'سيعيد المحاولة. وإلا سيتفقد أحد السجلات.',
-        busyA: (k) => `${k} منا منشغلون بالعمل الآن.`, busyB: 'إذن هذا وقت مناسب للقهوة.',
-        roleA: (r) => `كيف تسير الأمور في ${r}؟`, roleB: ['مشغول، لكن بخير.', 'هادئ اليوم على غير العادة.', 'أنتظر المهمة التالية.'],
-      },
-      record: 'تسجيل فيديو مدته 30 ثانية', recording: (n) => `جارٍ التسجيل… ${n} ث`, recordSaved: 'تم حفظ الفيديو ✓', recordUnsupported: 'لا يستطيع هذا المتصفح تسجيل المكتب.',
-      logo: 'شعار الشركة', logoPick: 'رفع شعار…', logoRemove: 'إزالة الشعار',
-      exportLooks: 'تصدير المظهر', importLooks: 'استيراد المظهر…',
-      editLook: 'تغيير المظهر', looks: 'المظهر', photo: 'رأس من صورة', photoPick: 'اختر صورة…',
-      photoHint: 'اسحب الصورة لتحريكها، واستخدم عجلة الفأرة أو المنزلق للتكبير حتى يملأ الوجه الدائرة.', zoom: 'تكبير',
-      findFace: 'ابحث عن الوجه', noFace: 'لم يُعثر على وجه: ضع الدائرة يدويًا.', photoRemove: 'إزالة الصورة',
-      hair: 'الشعر', hairShort: 'قصير', hairLong: 'طويل', hairBun: 'كعكة', hairPony: 'ذيل حصان', hairCurly: 'مجعد', hairBald: 'أصلع',
-      hairColor: 'لون الشعر', skin: 'البشرة', color: 'اللون', clothes: 'الملابس', trousers: 'بنطال', skirt: 'تنورة', shoes: 'الأحذية', flats: 'مسطح', heels: 'كعب عالٍ',
-      save: 'حفظ', cancel: 'إلغاء', resetLook: 'العودة إلى الافتراضي',
-      lookServer: 'يُحفظ على الجهاز الذي يشغّل Cubicle، فتعرضه كل شاشات هذا المكتب.', lookLocal: 'يُحفظ في هذا المتصفح. صدّره لاستخدامه في متصفح آخر.',
-      lookDenied: 'لا يغيّر المظهر إلا متصفح على الجهاز الذي يشغّل Cubicle. حُفظ في هذا المتصفح مؤقتًا.',
-      needsYouTitle: (n) => `${n} يحتاجك`,
-      lastSteps: 'آخر الخطوات', whatsNew: (v) => `تم تحديث Cubicle إلى ${v}.`, whatsNewLink: 'ما الجديد', reloadNote: 'تم تحديث Cubicle.', reloadBtn: 'أعد تحميل الصفحة', upNew: (v, cur) => `⬆ صدر Cubicle ${v} (لديك ${cur}).`, upHow: 'للتحديث:', upCopy: 'نسخ', upCopied: 'تم النسخ', upAuto: 'سيتحدّث تلقائيًا بعد قليل، ثم تُعاد تحميل الصفحة.', upAutoHint: 'شغّل Cubicle مع ‎--auto-update‎ ليتحدّث تلقائيًا.', upNow: 'حدّث الآن', upBusy: 'جارٍ التحديث…', upDone: 'تم التحديث؛ جارٍ إعادة التحميل.', upErr: 'تعذّر التحديث من هنا. شغّل هذا بدلًا من ذلك:', upFail: 'تعذّر التحديث من هنا (يلزم مسؤول المثيل). شغّل هذا حيث يعمل Paperclip:',
-      pairs: [['هل دمجته؟', 'الاختبارات أولًا. دائمًا الاختبارات أولًا.'], ['قهوة أم شاي؟', 'أي شيء يُبقي الرموز تتدفق.'], ['من كسر البناء؟', 'لست أنا، كنت في الاستراحة.'],
-        ['يوم مزدحم؟', 'أربعون استدعاءً للأدوات حتى الآن.'], ['أي أخبار من الإدارة؟', 'ما زلت أنتظر موافقة.'], ['مكتب جميل.', 'صار فيه شاشتان الآن!']],
-      chatter: ['☕', 'استراحة قهوة', '…', 'همم', 'ما التالي؟'],
-      hint: 'الوكلاء العاملون يجلسون إلى مكاتبهم ويكتبون، والمتفرغون يتجولون في الاستراحة. يُحدَّث كل 4 ثوانٍ.',
-      demo: 'وضع العرض: وكلاء وهميون. احذف <code>?demo</code> من العنوان لمشاهدة شركتك على Paperclip.',
-      hosted: 'هذا عرض مستضاف بوكلاء وهميين. لمشاهدة وكلائك، شغّل <code>npx @caglarutkuguler/cubicle</code> وافتح <code>http://127.0.0.1:3200</code>، أو ثبّته كإضافة في Paperclip.',
-    },
   };
   // «Мой офис»: русский. То, чего здесь нет (Paperclip, Telegram, KPI — на экране не видны), берётся из en.
   const ruN = (n, one, few, many) => { const a = Math.abs(n) % 100, b = a % 10; return a > 10 && a < 20 ? many : b === 1 ? one : b >= 2 && b <= 4 ? few : many; };
   STR.ru = { ...STR.en,
     connecting: 'Подключаюсь…', feedUnreachable: 'Не могу прочитать события, пробую ещё…',
-    empty: 'Жду первого события — напишите Боссу.', emptyClaude: 'Жду первого события — напишите Боссу.', noCompany: 'Пока никого.',
+    empty: 'Жду первого события — напишите Боссу. Написали, а здесь пусто? В Codex наберите /hooks и разрешите хуки офиса.', emptyClaude: 'Жду первого события — напишите Боссу.', noCompany: 'Пока никого.',
     summary: (n, r) => `${n} ${ruN(n, 'сотрудник', 'сотрудника', 'сотрудников')} · ${r} ${ruN(r, 'работает', 'работают', 'работают')}`,
     running: 'работает', idle: 'свободен', error: 'ошибка', paused: 'на паузе', waiting: 'ждёт вас', noTask: 'без задания',
     done: '✓ готово', errBubble: '⚠ ошибка', waitBubble: '✋ ждёт вас',
@@ -1664,7 +1040,7 @@
   // browser), then the browser language; English otherwise.
   const savedLang = (() => { try { return JSON.parse(localStorage.getItem('cubicle.settings') || '{}').lang || ''; } catch (_) { return ''; } })();
   const wantLang = (params.get('lang') || savedLang || 'ru').slice(0, 2).toLowerCase();
-  const lang = STR[wantLang] ? wantLang : 'en';
+  const lang = STR[wantLang] ? wantLang : 'ru';
   const L = STR[lang];
   document.documentElement.lang = lang;
   document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
@@ -2608,20 +1984,15 @@
     if (!mainEl) return;
     const b = document.body;
     b.classList.remove('side');
-    const wide = window.innerWidth >= 1200;
-    b.classList.toggle('mo-wide', wide);
-    if (window.MO) window.MO.place(wide);
+    if (window.MO) window.MO.place();
     if (KIOSK || !animOn()) { b.classList.remove('fit'); return; }
     b.classList.add('fit');
-    // Одна сетка: офис во всю ширину своей колонки (холст с целым внутренним масштабом растянут CSS,
-    // pixelated). Упёрлись в высоту — сужаем всю сетку, чтобы края офиса и блоков под ним совпадали.
-    const wrap = document.querySelector('.wrap'), pad = 32, side = wide ? 380 + 12 : 0;
-    const top = mainEl.getBoundingClientRect().top + window.scrollY;
-    const maxH = wide ? window.innerHeight - top - 24 : Math.max(180, window.innerHeight * 0.6);
-    let page = window.innerWidth - pad;  // без потолка: сколько позволяет окно, столько и видно
-    const officeW = Math.min(page - side, (maxH - 4) * CW / CH + 4);
-    page = Math.floor(officeW + side);
-    if (wrap) wrap.style.maxWidth = (page + pad) + 'px';
+    // холст с целым внутренним масштабом растянут CSS (pixelated)
+    const wrap = document.querySelector('.wrap'), pad = 32;
+    const maxH = Math.max(180, window.innerHeight - 130);   // 130 — шапка и вкладки
+    const officeW = Math.min(window.innerWidth - pad, 860, (maxH - 4) * CW / CH + 4);   // 860 — потолок, крупнее громоздко
+    b.style.setProperty('--mo-stage-w', Math.floor(officeW) + 'px');
+    if (wrap) wrap.style.maxWidth = 'none';
     mainEl.style.setProperty('--stage-w', '100%');
     mainEl.style.setProperty('--stage-h', Math.floor((officeW - 4) * CH / CW + 4) + 'px');
     try { clampCam(); } catch (_) {}
@@ -4626,7 +3997,7 @@
     if (s.status === 'waiting' && s.seated) return [stuckOnly(s) ? L.blkBubble : L.waitBubble, 'wait'];
     if (s.queueIdx >= 0 && !s.walking) {
       const t = s.ask ? s.ask.issue : s.task;
-      return s.queueIdx === 0 ? ['✋ ' + ((t && t.identifier) || L.waitBubble), 'wait'] : ['✋', 'wait'];
+      return s.queueIdx === 0 ? [(t && t.identifier) ? '✋ ' + t.identifier : L.waitBubble, 'wait'] : ['✋', 'wait'];
     }
     if (s.typing && s.ask && Math.floor(now / 3) % 2) return [(stuckOnly(s) ? '⛔ ' : '✋ ') + (s.ask.issue.identifier || L.waiting), 'wait'];
     if (s.typing && s.task && s.task.step) return [s.task.step, 'task', s.task.title || ''];
@@ -4691,7 +4062,7 @@
   // plus one entry there; see docs/THEMES.md.
   let CATALOG = [{ id: 'pixel', name: themes.pixel.name, options: [] }];
   const tr = (o) => (o && (o[lang] || o.en)) || '';
-  const LANG_NAMES = { ru: 'Русский', en: 'English', tr: 'Türkçe', de: 'Deutsch', es: 'Español', fr: 'Français', zh: '中文', ar: 'العربية' };
+  const LANG_NAMES = { ru: 'Русский', en: 'English' };
   const STORE = 'cubicle.settings';
   let settings = { theme: 'pixel' };
   try { settings = { ...settings, ...JSON.parse(localStorage.getItem(STORE) || '{}') }; } catch (_) {}

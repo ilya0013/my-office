@@ -10,5 +10,6 @@ secrets*
 письма/*.md
 ответы/*.md
 экран/events.js
+экран/решения.js
 docs/lab-runs/
 docs/испытание.md
