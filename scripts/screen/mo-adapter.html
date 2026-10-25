@@ -406,7 +406,7 @@
     const working = S.slots.filter((a) => a.status === 'running').length;
     const wait = Object.values(S.leads).filter((l) => l.status === 'проверено').length;
     const st = S.boss.status === 'waiting' ? `Босс ждёт вас в чате${S.waitText ? ': «' + esc(S.waitText) + '»' : ''}`
-      : working ? `Офис работает — сотрудников за делом: ${working}` : S.boss.status === 'running' ? 'Офис работает' : (missing && !all.length ? 'Жду первого события — напишите Боссу в чате' : 'Тихо — напишите Боссу, что сделать');
+      : working ? `Офис работает — сотрудников за делом: ${working}` : S.boss.status === 'running' ? 'Офис работает' : !all.length ? '' : 'Тихо — напишите Боссу, что сделать';   // событий нет — говорит плашка над офисом
     set('mo-status', st + (wait && S.boss.status !== 'waiting' ? ` · писем ждут вашего «одобряю»: ${wait}` : ''));
     const el = document.getElementById('mo-status'); if (el) el.classList.toggle('you', S.boss.status === 'waiting');
     renderBase();

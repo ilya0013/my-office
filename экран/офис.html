@@ -720,7 +720,7 @@
     const working = S.slots.filter((a) => a.status === 'running').length;
     const wait = Object.values(S.leads).filter((l) => l.status === 'проверено').length;
     const st = S.boss.status === 'waiting' ? `Босс ждёт вас в чате${S.waitText ? ': «' + esc(S.waitText) + '»' : ''}`
-      : working ? `Офис работает — сотрудников за делом: ${working}` : S.boss.status === 'running' ? 'Офис работает' : (missing && !all.length ? 'Жду первого события — напишите Боссу в чате' : 'Тихо — напишите Боссу, что сделать');
+      : working ? `Офис работает — сотрудников за делом: ${working}` : S.boss.status === 'running' ? 'Офис работает' : !all.length ? '' : 'Тихо — напишите Боссу, что сделать';   // событий нет — говорит плашка над офисом
     set('mo-status', st + (wait && S.boss.status !== 'waiting' ? ` · писем ждут вашего «одобряю»: ${wait}` : ''));
     const el = document.getElementById('mo-status'); if (el) el.classList.toggle('you', S.boss.status === 'waiting');
     renderBase();
@@ -1604,7 +1604,7 @@
   const ruN = (n, one, few, many) => { const a = Math.abs(n) % 100, b = a % 10; return a > 10 && a < 20 ? many : b === 1 ? one : b >= 2 && b <= 4 ? few : many; };
   STR.ru = { ...STR.en,
     connecting: 'Подключаюсь…', feedUnreachable: 'Не могу прочитать события, пробую ещё…',
-    empty: 'Жду первого события — напишите Боссу.', emptyClaude: 'Жду первого события — напишите Боссу.', noCompany: 'Пока никого.',
+    empty: 'Жду первого события — напишите Боссу. Написали, а здесь пусто? В Codex наберите /hooks и разрешите хуки офиса.', emptyClaude: 'Жду первого события — напишите Боссу.', noCompany: 'Пока никого.',
     summary: (n, r) => `${n} ${ruN(n, 'сотрудник', 'сотрудника', 'сотрудников')} · ${r} ${ruN(r, 'работает', 'работают', 'работают')}`,
     running: 'работает', idle: 'свободен', error: 'ошибка', paused: 'на паузе', waiting: 'ждёт вас', noTask: 'без задания',
     done: '✓ готово', errBubble: '⚠ ошибка', waitBubble: '✋ ждёт вас',
