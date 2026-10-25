@@ -15,7 +15,8 @@
   body.mo-wide #mo-tabs { display:none; }
   body:not(.mo-wide) #mo > .mo-p:not([data-pane="wait"]) { display:none; }
   body:not(.mo-wide)[data-motab="board"] #mo > [data-pane="board"], body:not(.mo-wide)[data-motab="flow"] #mo > [data-pane="flow"],
-  body:not(.mo-wide)[data-motab="team"] #mo > [data-pane="team"], body:not(.mo-wide)[data-motab="nums"] #mo > [data-pane="nums"] { display:block; }
+  body:not(.mo-wide)[data-motab="team"] #mo > [data-pane="team"], body:not(.mo-wide)[data-motab="nums"] #mo > [data-pane="nums"],
+  body:not(.mo-wide)[data-motab="dec"] #mo > [data-pane="dec"] { display:block; }
   body:not(.mo-wide) #mo > .mo-p:not([data-pane="wait"]) h3 { display:none; }
   #mo ul, #mo-team ul { list-style:none; margin:0; padding:0; font-size:12.5px; }
   #mo li { padding:3px 0; border-top:1px solid var(--line); overflow-wrap:anywhere; }
@@ -53,6 +54,17 @@
   body:not(.mo-wide) #mo-help summary { display:none; }
   #mo-toast { position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#1f5130; color:#dcffe2; border-radius:8px; padding:7px 14px; font-size:13px; z-index:20; box-shadow:0 6px 20px rgba(0,0,0,.4); display:none; }
   body:not(.mo-wide)[data-motab="help"] #mo > [data-pane="help"] { display:block; }
+  /* Решения: кандидаты и письма карточками */
+  body.mo-wide #mo-dec { max-height:62vh; overflow:auto; }
+  #mo-dec h4 { margin:8px 0 3px; font-size:12px; color:var(--muted); font-weight:600; }
+  #mo-dec h4:first-child { margin-top:0; }
+  .mo-card { font-size:12.5px; padding:5px 0; border-top:1px solid var(--line); overflow-wrap:anywhere; }
+  .mo-card:first-of-type { border-top:0; }
+  .mo-card .mute { font-size:12px; }
+  .mo-card label { cursor:pointer; }
+  .mo-card details summary { cursor:pointer; color:var(--link); font-size:12px; margin-top:2px; }
+  .mo-letter { white-space:pre-wrap; background:#1d2033; border-radius:6px; padding:6px 8px; margin-top:4px; font-size:12.5px; line-height:1.4; }
+  .mo-letter.tr { color:#c9cbe0; }
 </style>
 <script>
 /* «Мой офис»: события хуков (экран/events.js, строки ev({...});) → снимок в формате ленты Cubicle
@@ -249,7 +261,7 @@
 
   function apply(e, at) {
     const kind = e.hook_event_name || e.event || e.type || '';
-    if (kind === 'MoFiles') { syncFiles(e.leads || {}, at); return; }
+    if (kind === 'MoFiles') { syncFiles(e.leads || {}, at); S.decDirty = true; return; }
     if (kind === 'SubagentStart') {
       const known = e.agent_id && S.byAgent.get(e.agent_id);
       if (known && known.status !== 'running') S.byAgent.delete(e.agent_id);   // тот же id получил новое задание
@@ -359,6 +371,7 @@
       if (!dup(e)) { try { apply(e, (!PLAY && e.__t) || Date.now()); if (e.source === 'agent') S.agentApplied = true; } catch (_) {} }
       applied++;
     }
+    if (S.decDirty && !PLAY) { S.decDirty = false; readDec(); }   // хук переписал решения.js перед снимком
     render();
     return { company: '', agents: [S.boss, ...S.slots].map(out) };
   }
@@ -369,7 +382,9 @@
   const colorOf = (n) => COLORS[n] || HUES[[...n].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 0) % HUES.length];
   const who = (n) => `<b style="color:${colorOf(baseName(n))}">${esc(n)}</b>`;
   const COL_CLASS = { 'письмо готово': 'hot', 'не подходит': 'bad', 'отказ': 'bad', 'одобрено': 'good', 'отправлено': 'good', 'ответ': 'good', 'встреча': 'good' };
-  const set = (id, html) => { const el = document.getElementById(id); if (el && el.innerHTML !== html) el.innerHTML = html; };
+  // сравниваем с прошлой строкой, не с innerHTML: браузер его нормализует (checked → checked=""), и панель перерисовывалась бы каждый раз
+  const shown = {};
+  const set = (id, html) => { const el = document.getElementById(id); if (el && shown[id] !== html) { el.innerHTML = html; shown[id] = html; } };
   // Ссылки на файлы проекта: страница лежит в экран/, корень проекта — '../'. .md откроется текстом.
   const fileA = (path, text) => (PLAY || !S.written.has(path) ? text : `<a href="../${esc(encodeURI(path))}" target="_blank" rel="noopener" title="откроется текстом">${text}</a>`);
   const FILE_RE = /(^|[\s,(])((?:[\wА-Яа-яЁё.-]+\/)*[\wА-Яа-яЁё-][\wА-Яа-яЁё.-]*\.(?:md|txt|csv|json|html))(?=$|[\s,;)])/g;
@@ -417,7 +432,64 @@
     const acts = Object.entries(S.acts).sort((a, b) => b[1] - a[1]);
     set('mo-nums', nums.map(([k, v]) => `<li class="num"><span>${esc(k)}</span><b>${v}</b></li>`).join('')
       + (acts.length ? `<li><span class="mute">Действий:</span> ${acts.map(([k, v]) => `${who(k)} ${v}`).join(' · ')}</li>` : ''));
+    renderDec();
   }
+
+  // ---------- Решения: кандидаты и письма из решения.js (хук переписывает его в конце хода) ----------
+  let D = null, decLoading = false;
+  const picks = {}, opened = {};
+  window.dec = (d) => { if (d && typeof d === 'object') D = d; };
+  function readDec() {
+    if (decLoading) return;
+    decLoading = true;
+    const el = document.createElement('script');
+    el.src = 'решения.js?t=' + Date.now();
+    el.onload = el.onerror = () => { el.remove(); decLoading = false; render(); };
+    document.head.appendChild(el);
+  }
+  // Markdown письма → текст: ссылка — её текст, заголовок — жирным
+  const md = (s) => esc(String(s || '').trim()).replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/^#+\s*(.+)$/gm, '<b>$1</b>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+  const plain = (s) => String(s || '').trim().replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)');
+  const copyB = (label, text) => `<button type="button" class="mo-say" data-copy="${esc(text)}">${esc(label)}</button>`;
+  function renderDec() {
+    if (PLAY) return set('mo-dec', '<div class="mo-st empty">В демо решений нет — здесь появятся кандидаты и письма из ваших файлов.</div>');
+    const all = Object.entries(D || {});
+    const st = (c) => all.filter(([, l]) => String(l['статус'] || '').trim().toLowerCase() === c);
+    const name = (slug, l) => `<b>${esc(l['компания'] || slug)}</b>`;
+    const parts = [];
+    if (st('новый').length) {
+      const busy = S.slots.some((a) => a.role === 'manager' && a.status === 'running');
+      parts.push('<h4>Кандидаты — кого берём?</h4>' + (busy ? '<div class="mute">Менеджеры уже пишут письма отмеченным.</div>' : '')
+        + [...st('новый'), ...st('запас')].map(([slug, l]) => {
+          const on = picks[slug] ?? l['статус'] === 'новый';
+          return `<div class="mo-card"><label><input type="checkbox" data-pick="${esc(slug)}"${on ? ' checked' : ''}${busy ? ' disabled' : ''}> ${name(slug, l)}</label>`
+            + (l['статус'] === 'запас' ? ' <span class="mo-chip">запас</span>' : '')
+            + (/^https?:\/\//.test(l['сайт'] || '') ? ` · <a href="${esc(l['сайт'])}" target="_blank" rel="noopener">сайт</a>` : '')
+            + (l['почему'] ? `<div class="mute">${esc(l['почему'])}</div>` : '') + '</div>';
+        }).join('')
+        + (busy ? '' : `<div class="mo-sub">${say('запускай все', 'pri')}<button type="button" class="mo-say" data-take>берём отмеченных</button></div>`));
+    }
+    const letters = st('проверено');
+    if (letters.length) parts.push('<h4>Письма — прочитайте и ответьте</h4>' + letters.map(([slug, l]) => {
+      const chk = String(l['проверка'] || '');
+      return `<div class="mo-card">${name(slug, l)} ${chk.includes('✏') ? '✏️' : chk ? '✅' : ''}`
+        + (l['почему'] ? `<div>${esc(l['почему'])}</div>` : '')
+        + (chk ? `<div class="mute">Проверка: ${esc(chk)}</div>` : '')
+        + `<details data-open="${esc(slug)}"${opened[slug] ? ' open' : ''}><summary>читать письмо${l['перевод'] ? ' и перевод' : ''}</summary>`
+        + (l['кому'] ? `<div class="mute">Кому: ${md(l['кому'])}${l['тема'] ? ' · Тема: ' + esc(l['тема']) : ''}</div>` : '')
+        + `<div class="mo-letter">${md(l['письмо'])}</div>${l['перевод'] ? `<div class="mo-letter tr">${md(l['перевод'])}</div>` : ''}</details>`
+        + `<div class="mo-sub">${say('одобряю ' + slug, 'pri')}${say('поправь ' + slug + ': ')}</div></div>`;
+    }).join('') + (letters.length > 1 ? `<div class="mo-sub">${say('одобряю все')}</div>` : ''));
+    const ok = st('одобрено');
+    if (ok.length) parts.push('<h4>Одобрены — отправьте со своей почты</h4>' + ok.map(([slug, l]) => {
+      const mail = (String(l['кому'] || '').match(/[\w.+-]+@[\w-]+(\.[\w-]+)+/) || [''])[0];
+      return `<div class="mo-card">${name(slug, l)}${mail ? ' — ' + esc(mail) : ''}<div class="mo-sub">`
+        + (mail ? copyB('адрес', mail) : '') + (l['тема'] ? copyB('тема', l['тема']) : '') + (l['письмо'] ? copyB('письмо', plain(l['письмо'])) : '') + '</div></div>';
+    }).join(''));
+    set('mo-dec', parts.join('') || `<div class="mo-st empty">${D ? 'Сейчас решать нечего — кандидаты и проверенные письма появятся здесь.' : 'Решения появятся, когда команда закончит первый ход.'}</div>`);
+  }
+  document.addEventListener('change', (e) => { const p = e.target.dataset && e.target.dataset.pick; if (p) { picks[p] = e.target.checked; render(); } });
+  document.addEventListener('toggle', (e) => { const o = e.target.dataset && e.target.dataset.open; if (o) opened[o] = e.target.open; }, true);
 
   const say = (text, cls = '') => `<button type="button" class="mo-say ${cls}" data-say="${esc(text)}">${esc(text)}</button>`;
   function copyText(text) {
@@ -435,12 +507,21 @@
     el.textContent = msg; el.style.display = 'block'; clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.style.display = 'none'; }, 2600);
   }
   document.addEventListener('click', (e) => {
+    const c = e.target.closest && e.target.closest('[data-copy]');
+    if (c) { copyText(c.dataset.copy).then((ok) => toast(ok ? `${c.textContent} скопировано — вставьте в письмо` : 'Не получилось скопировать — откройте файл письма')); return; }
+    if (e.target.closest && e.target.closest('[data-take]')) {
+      const list = [...document.querySelectorAll('#mo-dec [data-pick]:checked')].map((x) => x.dataset.pick);
+      if (!list.length) { toast('Отметьте кандидатов галочками'); return; }
+      const text = 'берём ' + list.join(', ');
+      copyText(text).then((ok) => toast(ok ? `«${text}» скопировано — вставьте в чат Боссу` : `Скопируйте вручную: ${text}`));
+      return;
+    }
     const b = e.target.closest && e.target.closest('[data-say]'); if (!b) return;
     const text = b.dataset.say;
     copyText(text).then((ok) => toast(ok ? `«${text}» скопировано — вставьте в чат Боссу` : `Скопируйте вручную: ${text}`));
   });
   // шпаргалка: те же группы, что у Босса; фразы с «…» копируются как есть
-  const HELP = [['Работа', ['найди 5 компаний', 'запускай все', 'покажи все компании', 'что в работе?', 'почему …?', 'пропусти …']],
+  const HELP = [['Работа', ['найди 5 компаний', 'запускай все', 'берём …', 'покажи все компании', 'что в работе?', 'почему …?', 'пропусти …']],
     ['Письма', ['покажи письмо …', 'поправь …: …', 'одобряю …', 'одобряю все', 'отправил …', 'ответ от …: …']],
     ['Настройки', ['настрой заново', 'покажи офис', 'помощь']]];
   function renderHelp() {
@@ -449,8 +530,8 @@
   }
 
   // Вкладки (узкий экран) и место «Команды»: под офисом слева или вкладкой
-  const TABS = ['board', 'flow', 'team', 'nums', 'help'];
-  let tab = 'board';
+  const TABS = ['dec', 'board', 'flow', 'team', 'nums', 'help'];
+  let tab = 'dec';
   try { const t = localStorage.getItem('myoffice.tab'); if (TABS.includes(t)) tab = t; } catch (_) {}
   function showTab(t) {
     tab = t; document.body.dataset.motab = t;

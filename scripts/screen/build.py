@@ -42,7 +42,8 @@ rep('''  <div id="cards"></div>
   </div>
   <section id="mo">
     <div class="mo-p" data-pane="wait"><h3>Ждёт вас</h3><ul id="mo-wait"></ul></div>
-    <nav id="mo-tabs"><button type="button" data-tab="board">Конвейер</button><button type="button" data-tab="flow">Ход работы</button><button type="button" data-tab="team">Команда</button><button type="button" data-tab="nums">Цифры</button><button type="button" data-tab="help">Как управлять</button></nav>
+    <nav id="mo-tabs"><button type="button" data-tab="dec">Решения</button><button type="button" data-tab="board">Конвейер</button><button type="button" data-tab="flow">Ход работы</button><button type="button" data-tab="team">Команда</button><button type="button" data-tab="nums">Цифры</button><button type="button" data-tab="help">Как управлять</button></nav>
+    <div class="mo-p" data-pane="dec"><h3>Решения</h3><div id="mo-dec"></div></div>
     <div class="mo-p" data-pane="board"><h3>Конвейер</h3><div id="mo-board"></div></div>
     <div class="mo-p" data-pane="flow"><h3>Ход работы</h3><ul id="mo-flow"></ul></div>
     <div class="mo-p" data-pane="nums"><h3>Цифры</h3><ul id="mo-nums"></ul></div>
