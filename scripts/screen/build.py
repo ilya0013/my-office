@@ -29,7 +29,7 @@ rep('</style>\n</head>', '</style>\n' + adapter + '</head>')
 # 3. видимые надписи
 rep('<h1>Cubicle <small id="co"></small></h1>', '<h1>Мой офис <small id="co"></small></h1>')
 rep('<span><a href="https://github.com/caglarutkuguler/cubicle" target="_blank" rel="noopener">Cubicle</a> · MIT</span>', '<span>Мой офис</span>')
-# раскладка: слева офис и команда, справа (или вкладками под офисом) — панели
+# раскладка: одна колонка при любой ширине — офис, «Сейчас от вас нужно», доска компаний, команда
 rep('''  <div id="main">
   <div id="stage">''', '''  <div id="mo-layout">
   <div id="mo-left">
@@ -38,16 +38,11 @@ rep('''  <div id="main">
 rep('''  <div id="cards"></div>
   </div>
 ''', '''  </div>
-  <div class="mo-p" id="mo-team" data-pane="team"><h3>Команда</h3><div id="cards"></div></div>
   </div>
   <section id="mo">
-    <div class="mo-p" data-pane="wait"><h3>Ждёт вас</h3><ul id="mo-wait"></ul></div>
-    <nav id="mo-tabs"><button type="button" data-tab="dec">Решения</button><button type="button" data-tab="board">Конвейер</button><button type="button" data-tab="flow">Ход работы</button><button type="button" data-tab="team">Команда</button><button type="button" data-tab="nums">Цифры</button><button type="button" data-tab="help">Как управлять</button></nav>
-    <div class="mo-p" data-pane="dec"><h3>Решения</h3><div id="mo-dec"></div></div>
-    <div class="mo-p" data-pane="board"><h3>Конвейер</h3><div id="mo-board"></div></div>
-    <div class="mo-p" data-pane="flow"><h3>Ход работы</h3><ul id="mo-flow"></ul></div>
-    <div class="mo-p" data-pane="nums"><h3>Цифры</h3><ul id="mo-nums"></ul></div>
-    <div class="mo-p" data-pane="help"><details id="mo-help"><summary>Как управлять</summary><div id="mo-help-body"></div></details></div>
+    <div class="mo-p" id="mo-now"><h3>Сейчас от вас нужно</h3><ul id="mo-wait"></ul></div>
+    <div class="mo-p" id="mo-board-box"><h3>Компании</h3><div id="mo-board"></div><div id="mo-rest"></div></div>
+    <div class="mo-p" id="mo-team"><h3>Команда</h3><div id="cards"></div></div>
   </section>
   </div>
 ''')
@@ -80,26 +75,22 @@ rep("const bubMax = Math.max(80, Math.floor(3.3 * T * k - 6)) + 'px';", "const b
 rep("const deskCount = Math.max(4, Math.min(DESKS.length, Math.ceil((sprites.size + (hum ? 1 : 0)) / 4) * 4));",
     "const deskCount = Math.max(6, Math.min(DESKS.length, Math.ceil((sprites.size + (hum ? 1 : 0)) / 3) * 3));")
 rep("  resizeCanvas();\n  loadCatalog().then(applySettings).then(applyView);", "  layoutFor(0, true);\n  loadCatalog().then(applySettings).then(applyView);")
-# офис сам подгоняет размер: целый масштаб, ≥1200 px — две колонки, уже — офис ≤40 % высоты и вкладки
+# офис сам подгоняет размер: целый масштаб, не выше 55 % окна — под ним видно «Сейчас от вас нужно» и доску
 s0 = h.index('  function fitLayout() {'); s1 = h.index("  window.addEventListener('resize', () => fitLayout());")
 h = h[:s0] + '''  function fitLayout() {
     if (!mainEl) return;
     const b = document.body;
     b.classList.remove('side');
-    const wide = window.innerWidth >= 1200;
-    b.classList.toggle('mo-wide', wide);
-    if (window.MO) window.MO.place(wide);
+    if (window.MO) window.MO.place();
     if (KIOSK || !animOn()) { b.classList.remove('fit'); return; }
     b.classList.add('fit');
     // Одна сетка: офис во всю ширину своей колонки (холст с целым внутренним масштабом растянут CSS,
     // pixelated). Упёрлись в высоту — сужаем всю сетку, чтобы края офиса и блоков под ним совпадали.
-    const wrap = document.querySelector('.wrap'), pad = 32, side = wide ? Math.min(620, Math.max(380, window.innerWidth * 0.32)) + 12 : 0;
-    const top = mainEl.getBoundingClientRect().top + window.scrollY;
-    b.style.setProperty('--mo-top', Math.ceil(top + 16) + 'px');   // правая колонка — ровно до низа окна
-    const maxH = wide ? window.innerHeight - top - 24 : Math.max(180, window.innerHeight * 0.6);
+    const wrap = document.querySelector('.wrap'), pad = 32;
+    const maxH = Math.max(180, window.innerHeight * 0.55);
     let page = window.innerWidth - pad;  // без потолка: сколько позволяет окно, столько и видно
-    const officeW = Math.min(page - side, (maxH - 4) * CW / CH + 4);
-    page = Math.floor(officeW + side);
+    const officeW = Math.min(page, (maxH - 4) * CW / CH + 4);
+    page = Math.floor(officeW);
     if (wrap) wrap.style.maxWidth = (page + pad) + 'px';
     mainEl.style.setProperty('--stage-w', '100%');
     mainEl.style.setProperty('--stage-h', Math.floor((officeW - 4) * CH / CW + 4) + 'px');

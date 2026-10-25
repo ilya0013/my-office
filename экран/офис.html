@@ -313,47 +313,38 @@
   footer { color:var(--muted); font-size:12px; margin-top:12px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
 </style>
 <style>
-  /* Мой офис: раскладка. ≥1200 px — слева офис и команда, справа «Ждёт вас» и вкладки высотой в окно
-     (прокручивается только открытая вкладка); уже — офис сверху, под ним вкладки */
-  body.mo-wide #mo-layout { display:grid; grid-template-columns:minmax(0,1fr) clamp(380px, 32vw, 620px); gap:12px; align-items:start; }
-  /* офис не выше окна: под ним должна остаться видна команда (--mo-reserve — место под шапку и команду) */
+  /* Мой офис: одна колонка при любой ширине — экран обычно открыт во встроенном браузере рядом с чатом.
+     Сверху вниз: офис (кто что делает) → «Сейчас от вас нужно» → доска компаний по стадиям → команда */
   body:not(.kiosk) #stage { width:min(100%, calc((100vh - var(--mo-reserve, 150px)) * 352 / 208)); margin:0 auto; }
-  body.mo-wide:not(.kiosk) #stage { --mo-reserve: 300px; }
   #mo { display:flex; flex-direction:column; gap:8px; margin-top:8px; min-width:0; }
-  body.mo-wide #mo { margin-top:0; position:sticky; top:8px; height:calc(100vh - var(--mo-top, 60px)); }
-  body.mo-wide #mo > .mo-p:not([data-pane="wait"]) { flex:1 1 auto; min-height:0; overflow:auto; }
-  body.mo-wide footer { display:none; }   /* страница целиком в окне — без общей прокрутки */
-  body.mo-wide .wrap { padding-bottom:8px; }
   .mo-p { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:7px 10px; min-width:0; }
-  #mo-team { margin-top:8px; }
   .mo-p h3 { margin:0 0 5px; font-size:11.5px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; }
-  #mo-tabs { display:flex; gap:4px; flex-wrap:wrap; }
-  #mo-tabs button { background:none; border:1px solid var(--line); color:var(--muted); border-radius:6px; padding:4px 10px; font:inherit; font-size:12.5px; cursor:pointer; }
-  #mo-tabs button[aria-selected="true"] { background:var(--panel); color:var(--text); border-color:#4a4f6b; }
-  body.mo-wide #mo-tabs [data-tab="team"] { display:none; }   /* в широком команда под офисом */
-  #mo > .mo-p:not([data-pane="wait"]) { display:none; }
-  [data-motab="board"] #mo > [data-pane="board"], [data-motab="flow"] #mo > [data-pane="flow"], [data-motab="team"] #mo > [data-pane="team"],
-  [data-motab="nums"] #mo > [data-pane="nums"], [data-motab="dec"] #mo > [data-pane="dec"], [data-motab="help"] #mo > [data-pane="help"] { display:block; }
-  #mo > .mo-p:not([data-pane="wait"]) h3 { display:none; }
-  #mo ul, #mo-team ul { list-style:none; margin:0; padding:0; font-size:12.5px; }
-  #mo li { padding:3px 0; border-top:1px solid var(--line); overflow-wrap:anywhere; }
+  #mo ul { list-style:none; margin:0; padding:0; font-size:13.5px; }
+  #mo li { padding:4px 0; border-top:1px solid var(--line); overflow-wrap:anywhere; }
   #mo li:first-child { border-top:0; }
-  body:not(.mo-wide) #mo-flow { max-height:40vh; overflow:auto; }
-  #mo .t { color:var(--muted); margin-inline-end:6px; font-variant-numeric:tabular-nums; }
-  #mo .w { color:#ffe08a; }
-  #mo .mute, .mo-st.empty { color:var(--muted); }
-  #mo .num { display:flex; justify-content:space-between; gap:8px; }
-  .mo-st { font-size:12.5px; padding:3px 0; border-top:1px solid var(--line); overflow-wrap:anywhere; }
-  .mo-st:first-child { border-top:0; }
-  .mo-chip { display:inline-block; font-size:11.5px; padding:0 7px; border-radius:9px; background:#33374d; color:#c9cbe0; margin-inline-end:6px; }
-  .mo-st.hot .mo-chip { background:#5a4a12; color:#ffe08a; } .mo-st.good .mo-chip { background:#1f5130; color:#9ff0b4; } .mo-st.bad .mo-chip { background:#2b2e40; color:#8b8da3; }
-  .mo-st.bad a { color:#8b8da3; }
+  #mo .mute { color:var(--muted); }
+  #mo-now.you { border-color:#8a7020; background:#2e2814; }
+  #mo-now.you h3 { color:#ffe08a; }
+  /* доска: узко — стадии друг под другом, от 860 px — пять колонок */
+  #mo-board-box { container-type:inline-size; }
+  #mo-board { display:grid; grid-template-columns:1fr; gap:6px; }
+  @container (min-width: 860px) { #mo-board { grid-template-columns:repeat(5, minmax(0, 1fr)); align-items:start; } }
+  .mo-col { background:#1d2033; border-radius:6px; padding:5px 7px; min-width:0; }
+  .mo-col h4 { margin:0; font-size:12.5px; color:var(--muted); font-weight:600; display:flex; justify-content:space-between; gap:6px; }
+  .mo-col.you h4 { color:#ffe08a; }
+  .mo-card { font-size:12.5px; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:5px 7px; margin-top:5px; overflow-wrap:anywhere; }
+  .mo-col.you .mo-card { border-color:#8a7020; }
+  .mo-card .mute { font-size:12px; }
+  .mo-card .by { font-size:12px; color:#9ec5ff; }
+  .mo-card details summary { cursor:pointer; color:var(--link); font-size:12.5px; margin-top:3px; }
+  .mo-letter { white-space:pre-wrap; background:#1d2033; border-radius:6px; padding:6px 8px; margin-top:4px; font-size:12.5px; line-height:1.4; }
+  .mo-letter.tr { color:#c9cbe0; }
+  #mo-rest { font-size:12px; color:var(--muted); margin-top:6px; overflow-wrap:anywhere; }
+  #mo-rest:empty { display:none; }
   /* команда — строками */
   #cards { display:block; margin-top:0; max-height:none; }
   #cards .card { background:none; border:0; border-top:1px solid var(--line); border-radius:0; padding:4px 0; }
   #cards .card:first-child { border-top:0; }
-  body.mo-wide #cards { display:grid; grid-template-columns:repeat(auto-fill, minmax(380px, 1fr)); column-gap:18px; }
-  body.mo-wide #cards .card:nth-child(-n+2) { border-top:0; }
   .mo-tr { display:flex; align-items:center; gap:7px; font-size:12.5px; min-width:0; white-space:nowrap; }
   .mo-tr .sw { width:9px; height:9px; border-radius:50%; flex:none; }
   .mo-tr b { cursor:pointer; }
@@ -362,25 +353,12 @@
   .mo-tr .mo-step { min-width:0; flex:1 1 0; overflow:hidden; text-overflow:ellipsis; color:var(--muted); }
   #cards .steps { margin:1px 0 0 16px; font-size:12px; }
   /* кнопки-фразы: клик копирует текст для чата с Боссом */
-  .mo-say { background:#2b2f47; color:var(--text); border:1px solid #4a4f6b; border-radius:12px; padding:1px 9px; margin:2px 4px 2px 0; font:inherit; font-size:12px; cursor:pointer; }
+  .mo-say { background:#2b2f47; color:var(--text); border:1px solid #4a4f6b; border-radius:12px; padding:2px 10px; margin:3px 4px 1px 0; font:inherit; font-size:12.5px; cursor:pointer; }
   .mo-say:hover { border-color:var(--link); }
-  .mo-say.pri { background:#4a3d12; border-color:#8a7020; color:#ffe08a; }
+  .mo-say.pri { background:#4a3d12; border-color:#8a7020; color:#ffe08a; font-weight:600; }
   a.mo-say { display:inline-block; text-decoration:none; }
   .mo-sub { margin-top:2px; }
-  #mo-help summary { cursor:pointer; color:var(--muted); font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.6px; }
-  #mo-help h4 { margin:6px 0 2px; font-size:12px; color:var(--muted); font-weight:600; }
-  #mo-help summary { display:none; }
   #mo-toast { position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#1f5130; color:#dcffe2; border-radius:8px; padding:7px 14px; font-size:13px; z-index:20; box-shadow:0 6px 20px rgba(0,0,0,.4); display:none; }
-  /* Решения: кандидаты и письма карточками */
-  #mo-dec h4 { margin:8px 0 3px; font-size:12px; color:var(--muted); font-weight:600; }
-  #mo-dec h4:first-child { margin-top:0; }
-  .mo-card { font-size:12.5px; padding:5px 0; border-top:1px solid var(--line); overflow-wrap:anywhere; }
-  .mo-card:first-of-type { border-top:0; }
-  .mo-card .mute { font-size:12px; }
-  .mo-card label { cursor:pointer; }
-  .mo-card details summary { cursor:pointer; color:var(--link); font-size:12px; margin-top:2px; }
-  .mo-letter { white-space:pre-wrap; background:#1d2033; border-radius:6px; padding:6px 8px; margin-top:4px; font-size:12.5px; line-height:1.4; }
-  .mo-letter.tr { color:#c9cbe0; }
 </style>
 <script>
 /* «Мой офис»: события хуков (экран/events.js, строки ev({...});) → снимок в формате ленты Cubicle
@@ -693,12 +671,7 @@
   }
 
   // ---------- панели ----------
-  const hhmm = (ms) => new Date(ms).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  const HUES = ['#e07ab8', '#3bc4c4', '#c9b458', '#a66de0', '#f07b3f'];
-  const colorOf = (n) => COLORS[n] || HUES[[...n].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 0) % HUES.length];
-  const who = (n) => `<b style="color:${colorOf(baseName(n))}">${esc(n)}</b>`;
-  const COL_CLASS = { 'письмо готово': 'hot', 'не подходит': 'bad', 'отказ': 'bad', 'одобрено': 'good', 'отправлено': 'good', 'ответ': 'good', 'встреча': 'good' };
-  // сравниваем с прошлой строкой, не с innerHTML: браузер его нормализует (checked → checked=""), и панель перерисовывалась бы каждый раз
+  // сравниваем с прошлой строкой, не с innerHTML: браузер его нормализует (open → open=""), и панель перерисовывалась бы каждый раз
   const shown = {};
   const set = (id, html) => { const el = document.getElementById(id); if (el && shown[id] !== html) { el.innerHTML = html; shown[id] = html; } };
   // Ссылки на файлы проекта: страница лежит в экран/, корень проекта — '../'. .md откроется текстом.
@@ -706,8 +679,6 @@
   const FILE_RE = /(^|[\s,(])((?:[\wА-Яа-яЁё.-]+\/)*[\wА-Яа-яЁё-][\wА-Яа-яЁё.-]*\.(?:md|txt|csv|json|html))(?=$|[\s,;)])/g;
   function linkText(text) { return esc(text).replace(FILE_RE, (m, pre, path) => pre + fileA(path, path)); }
   const leadA = (slug, text) => fileA(`лиды/${slug}.md`, esc(text));
-  // имя компании — досье; ✉ рядом — её письмо (подсказка в конце конвейера)
-  const letterA = (slug, status) => (cols().indexOf(status) >= 3 && !PLAY && S.written.has(`письма/${slug}.md`) ? ' ' + fileA(`письма/${slug}.md`, '✉').replace('title="откроется текстом"', 'title="открыть письмо"') : '');
   function linkSlugs(html) {
     for (const slug of Object.keys(S.leads)) {
       const re = new RegExp('(^|[\\s:(])(' + slug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')(?=$|[\\s,.;:)])', 'g');
@@ -721,38 +692,58 @@
       + `<span class="pill p-${esc(s.status)}">${label}</span><span class="mo-task" title="${esc(t.title || '')}">${linkSlugs(esc(t.title || ''))}</span>`
       + `<span class="mo-step">${linkText(t.step || '')}</span></div>`;
   }
+
+  // Доска: компания идёт слева направо; жёлтые колонки — там, где нужен человек
+  const STAGES = [['Найдены', ['новый']], ['Пишем и проверяем', ['письмо готово']], ['Ждут вашего «одобряю»', ['проверено'], 1],
+    ['Отправьте сами', ['одобрено'], 1], ['Отправлены', ['отправлено', 'ответ', 'встреча']]];
+  const info = (slug) => (D && D[slug]) || {};
+  const mailOf = (d) => (String(d['кому'] || '').match(/[\w.+-]+@[\w-]+(\.[\w-]+)+/) || [''])[0];
+  // кто из сотрудников сейчас ведёт компанию: её имя есть в задании
+  const busyWith = (slug) => S.slots.find((a) => a.status === 'running' && String(a.task || '').toLowerCase().includes(slug.toLowerCase()));
+  function card(slug, l, stage) {
+    const d = info(slug), w = busyWith(slug);
+    let h = `<div class="mo-card"><b>${leadA(slug, l.title)}</b>`
+      + (d['почему'] ? `<div class="mute">${esc(short(d['почему'], 120))}</div>` : '')
+      + (w ? `<div class="by">✍ ${esc(w.name)} работает над ней</div>` : '');
+    if (stage === 2) h += (d['письмо'] ? `<details data-open="${esc(slug)}"${opened[slug] ? ' open' : ''}><summary>прочитать письмо</summary>`
+        + `<div class="mo-letter">${md(d['письмо'])}</div>${d['перевод'] ? `<div class="mo-letter tr">${md(d['перевод'])}</div>` : ''}</details>` : '')
+      + `<div class="mo-sub">${say('одобряю ' + slug, 'pri')}${say('поправь ' + slug + ': ')}</div>`;
+    if (stage === 3) {
+      const mail = mailOf(d);
+      h += `<div class="mo-sub">${mail ? `<a class="mo-say pri" href="${esc(`mailto:${mail}?subject=${encodeURIComponent(d['тема'] || '')}&body=${encodeURIComponent(plain(d['письмо']))}`)}">✉ открыть в почте</a>` : ''}${say('отправил ' + slug)}</div>`;
+    }
+    return h + '</div>';
+  }
   function render() {
     if (!document.getElementById('mo')) return;
     const leads = Object.entries(S.leads);
-    const by = (c) => leads.filter(([, l]) => l.status === c);
-    const empty = cols().filter((c) => !by(c).length);
-    set('mo-board', (leads.length ? cols().filter((c) => by(c).length).map((c) => `<div class="mo-st ${COL_CLASS[c] || ''}"><span class="mo-chip">${esc(c)} <b>${by(c).length}</b></span>`
-      + by(c).map(([slug, l]) => leadA(slug, l.title) + letterA(slug, c)).join(', ') + '</div>').join('')
-      : '<div class="mo-st empty">Компаний пока нет — их найдёт Разведчик.</div>')
-      + (leads.length && empty.length ? `<div class="mo-st empty">пусто: ${esc(empty.join(', '))}</div>` : '')
-      + (leads.length ? '<div class="mo-st empty">Имя компании — её досье, ✉ — письмо.</div>' : ''));
-    const file = (slug) => (PLAY ? ' · <span class="mute">в демо файлов нет</span>' : S.written.has(`письма/${slug}.md`) ? ' · ' + fileA(`письма/${slug}.md`, 'открыть файл') : '');
-    const wait = by('письмо готово').map(([slug, l]) => `<li>✉ ${leadA(slug, l.title)} — письмо готово<div class="mo-sub">${say('покажи письмо ' + slug, 'pri')}<span class="mute">Босс покажет письмо в чате</span></div>`
-      + `<div class="mo-sub">${say('одобряю ' + slug)}${say('перепиши письмо ' + slug + ' короче')}${file(slug)}</div></li>`);
-    if (S.boss.status === 'waiting') wait.unshift(wait.length ? `<li class="w">🙋 Босс ждёт вас${S.waitText ? ': ' + esc(S.waitText) : ''}</li>`
-      : `<li class="w">🙋 Босс ждёт ответа — посмотрите чат<div class="mo-sub">${say('что в работе?')}</div></li>`);
-    set('mo-wait', wait.join('') || '<li class="mute">Пока ничего — команда работает.</li>');
-    set('mo-flow', S.flow.slice(-80).reverse().map((f) => `<li><span class="t">${hhmm(f.at)}</span>`
-      + (f.to === '📋' ? `📋 ${who(f.from)}: ${f.slug && S.leads[f.slug] ? leadA(f.slug, S.leads[f.slug].title) : ''} → ${esc(f.text)}${f.slug ? letterA(f.slug, f.text) : ''}`
-        : `${who(f.from)} → ${who(f.to)}: ${linkSlugs(esc(f.text))}`) + '</li>').join('')
-      || `<li class="mute">${missing ? 'Жду первого события — напишите Боссу.' : 'Пока тихо.'}</li>`);
-    const nums = [['Компаний в работе', leads.length]];
-    for (const c of cols()) if (by(c).length) nums.push(['· ' + c, by(c).length]);
-    nums.push(['Работало одновременно (максимум)', S.maxPar], ['Сотрудников за сессию', S.slots.length]);
-    const acts = Object.entries(S.acts).sort((a, b) => b[1] - a[1]);
-    set('mo-nums', nums.map(([k, v]) => `<li class="num"><span>${esc(k)}</span><b>${v}</b></li>`).join('')
-      + (acts.length ? `<li><span class="mute">Действий:</span> ${acts.map(([k, v]) => `${who(k)} ${v}`).join(' · ')}</li>` : ''));
-    renderDec();
+    const of = (sts) => leads.filter(([, l]) => sts.includes(l.status));
+    set('mo-board', STAGES.map(([name, sts, you], i) => {
+      const list = of(sts);
+      return `<div class="mo-col${you && list.length ? ' you' : ''}"><h4><span>${esc(name)}</span><span>${list.length || '—'}</span></h4>${list.map(([slug, l]) => card(slug, l, i)).join('')}</div>`;
+    }).join(''));
+    const known = [...STAGES.flatMap((x) => x[1]), 'запас', 'не подходит', 'отказ'];
+    const names = (list) => list.map(([slug, l]) => leadA(slug, l.title)).join(', ');
+    const rest = [['В запасе', of(['запас'])], ['Не подошли', of(['не подходит', 'отказ'])], ['Другое', leads.filter(([, l]) => !known.includes(l.status))]];
+    set('mo-rest', leads.length ? rest.filter(([, list]) => list.length).map(([k, list]) => `${k}: ${names(list)}`).join('<br>')
+      : 'Компаний пока нет. Напишите Боссу в чате: «найди 5 компаний».');
+
+    // «Сейчас от вас нужно» — одно-два действия с готовой фразой; ничего не нужно — так и пишем
+    const mgr = S.slots.some((a) => a.role === 'manager' && a.status === 'running');
+    const found = of(['новый']), wait = of(['проверено']), ok = of(['одобрено']), need = [];
+    if (S.boss.status === 'waiting' && found.length && !mgr) need.push(`<li>Найдено компаний: ${found.length} — посмотрите колонку «Найдены» и скажите Боссу, писать ли им.`
+      + `<div class="mo-sub">${say('запускай все', 'pri')}${say('убери …')}</div></li>`);
+    if (wait.length) need.push(`<li>Писем ждут вашего «одобряю»: ${wait.length}. Откройте письмо на карточке и нажмите «одобряю».`
+      + (wait.length > 1 ? `<div class="mo-sub">${say('одобряю все', 'pri')}</div>` : '') + '</li>');
+    if (ok.length) need.push(`<li>Одобрено писем: ${ok.length}. Отправьте их со своей почты кнопкой «✉ открыть в почте» и нажмите «отправил».</li>`);
+    if (!need.length && S.boss.status === 'waiting') need.push(`<li>Босс ответил в чате и ждёт вас${S.waitText ? ': «' + esc(S.waitText) + '»' : ''}</li>`);
+    document.getElementById('mo-now').classList.toggle('you', need.length > 0);
+    set('mo-wait', need.join('') || `<li class="mute">${missing && !all.length ? 'Жду первого события — напишите Боссу в чате.' : 'Ничего — команда работает, можно просто смотреть.'}</li>`);
   }
 
-  // ---------- Решения: кандидаты и письма из решения.js (хук переписывает его в конце хода) ----------
+  // Данные карточек (почему, письмо, адрес) — решения.js, хук переписывает его в конце хода
   let D = null, decLoading = false;
-  const picks = {}, opened = {};
+  const opened = {};
   window.dec = (d) => { if (d && typeof d === 'object') D = d; };
   function readDec() {
     if (decLoading) return;
@@ -765,51 +756,6 @@
   // Markdown письма → текст: ссылка — её текст, заголовок — жирным
   const md = (s) => esc(String(s || '').trim()).replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/^#+\s*(.+)$/gm, '<b>$1</b>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
   const plain = (s) => String(s || '').trim().replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)');
-  const copyB = (label, text) => `<button type="button" class="mo-say" data-copy="${esc(text)}">${esc(label)}</button>`;
-  function renderDec() {
-    if (PLAY) return set('mo-dec', '<div class="mo-st empty">В демо решений нет — здесь появятся кандидаты и письма из ваших файлов.</div>');
-    const all = Object.entries(D || {});
-    const st = (c) => all.filter(([, l]) => String(l['статус'] || '').trim().toLowerCase() === c);
-    const name = (slug, l) => `<b>${esc(l['компания'] || slug)}</b>`;
-    const parts = [];
-    if (st('новый').length) {
-      const busy = S.slots.some((a) => a.role === 'manager' && a.status === 'running');
-      parts.push('<h4>Кандидаты — кого берём?</h4>' + (busy ? '<div class="mute">Менеджеры уже пишут письма отмеченным.</div>' : '')
-        + [...st('новый'), ...st('запас')].map(([slug, l]) => {
-          const on = picks[slug] ?? l['статус'] === 'новый';
-          return `<div class="mo-card"><label><input type="checkbox" data-pick="${esc(slug)}"${on ? ' checked' : ''}${busy ? ' disabled' : ''}> ${name(slug, l)}</label>`
-            + (l['статус'] === 'запас' ? ' <span class="mo-chip">запас</span>' : '')
-            + (/^https?:\/\//.test(l['сайт'] || '') ? ` · <a href="${esc(l['сайт'])}" target="_blank" rel="noopener">сайт</a>` : '')
-            + (l['почему'] ? `<div class="mute">${esc(l['почему'])}</div>` : '') + '</div>';
-        }).join('')
-        + (busy ? '' : `<div class="mo-sub">${say('запускай все', 'pri')}<button type="button" class="mo-say" data-take>берём отмеченных</button></div>`));
-    }
-    const letters = st('проверено');
-    if (letters.length) parts.push('<h4>Письма — прочитайте и ответьте</h4>' + letters.map(([slug, l]) => {
-      const chk = String(l['проверка'] || '');
-      return `<div class="mo-card">${name(slug, l)} ${chk.includes('✏') ? '✏️' : chk ? '✅' : ''}`
-        + (l['почему'] ? `<div>${esc(l['почему'])}</div>` : '')
-        + (chk ? `<div class="mute">Проверка: ${esc(chk)}</div>` : '')
-        + `<details data-open="${esc(slug)}"${opened[slug] ? ' open' : ''}><summary>читать письмо${l['перевод'] ? ' и перевод' : ''}</summary>`
-        + (l['кому'] ? `<div class="mute">Кому: ${md(l['кому'])}${l['тема'] ? ' · Тема: ' + esc(l['тема']) : ''}</div>` : '')
-        + `<div class="mo-letter">${md(l['письмо'])}</div>${l['перевод'] ? `<div class="mo-letter tr">${md(l['перевод'])}</div>` : ''}</details>`
-        + `<div class="mo-sub">${say('одобряю ' + slug, 'pri')}${say('поправь ' + slug + ': ')}</div></div>`;
-    }).join('') + (letters.length > 1 ? `<div class="mo-sub">${say('одобряю все')}</div>` : ''));
-    const ok = st('одобрено');
-    if (ok.length) parts.push('<h4>Одобрены — осталось отправить со своей почты</h4>'
-      + '<div class="mute">«Открыть в почте» создаст письмо с адресом, темой и текстом. Не открылось — создайте новое письмо сами и вставьте по очереди адрес, тему и текст кнопками «скопировать». Отправили — скажите Боссу «отправил …».</div>'
-      + ok.map(([slug, l]) => {
-        const mail = (String(l['кому'] || '').match(/[\w.+-]+@[\w-]+(\.[\w-]+)+/) || [''])[0], body = plain(l['письмо']);
-        const href = mail ? `mailto:${mail}?subject=${encodeURIComponent(l['тема'] || '')}&body=${encodeURIComponent(body)}` : '';
-        return `<div class="mo-card">${name(slug, l)}` + (mail ? `<div>Кому: ${esc(mail)}</div>` : '') + (l['тема'] ? `<div>Тема: ${esc(l['тема'])}</div>` : '')
-          + (body ? `<details data-open="ok-${esc(slug)}"${opened['ok-' + slug] ? ' open' : ''}><summary>читать письмо</summary><div class="mo-letter">${md(l['письмо'])}</div></details>` : '')
-          + `<div class="mo-sub">${href ? `<a class="mo-say pri" href="${esc(href)}">✉ открыть в почте</a>` : ''}`
-          + (mail ? copyB('скопировать адрес', mail) : '') + (l['тема'] ? copyB('скопировать тему', l['тема']) : '') + (body ? copyB('скопировать текст', body) : '') + '</div>'
-          + `<div class="mo-sub">${say('отправил ' + slug)}</div></div>`;
-      }).join(''));
-    set('mo-dec', parts.join('') || `<div class="mo-st empty">${D ? 'Сейчас решать нечего — кандидаты и проверенные письма появятся здесь.' : 'Решения появятся, когда команда закончит первый ход.'}</div>`);
-  }
-  document.addEventListener('change', (e) => { const p = e.target.dataset && e.target.dataset.pick; if (p) { picks[p] = e.target.checked; render(); } });
   document.addEventListener('toggle', (e) => { const o = e.target.dataset && e.target.dataset.open; if (o) opened[o] = e.target.open; }, true);
 
   const say = (text, cls = '') => `<button type="button" class="mo-say ${cls}" data-say="${esc(text)}">${esc(text)}</button>`;
@@ -828,54 +774,13 @@
     el.textContent = msg; el.style.display = 'block'; clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.style.display = 'none'; }, 2600);
   }
   document.addEventListener('click', (e) => {
-    const c = e.target.closest && e.target.closest('[data-copy]');
-    if (c) { copyText(c.dataset.copy).then((ok) => toast(ok ? 'Скопировано — вставьте в новое письмо' : 'Не получилось скопировать — откройте файл письма')); return; }
-    if (e.target.closest && e.target.closest('[data-take]')) {
-      const list = [...document.querySelectorAll('#mo-dec [data-pick]:checked')].map((x) => x.dataset.pick);
-      if (!list.length) { toast('Отметьте кандидатов галочками'); return; }
-      const text = 'берём ' + list.join(', ');
-      copyText(text).then((ok) => toast(ok ? `«${text}» скопировано — вставьте в чат Боссу` : `Скопируйте вручную: ${text}`));
-      return;
-    }
     const b = e.target.closest && e.target.closest('[data-say]'); if (!b) return;
     const text = b.dataset.say;
     copyText(text).then((ok) => toast(ok ? `«${text}» скопировано — вставьте в чат Боссу` : `Скопируйте вручную: ${text}`));
   });
-  // шпаргалка: те же группы, что у Босса; фразы с «…» копируются как есть
-  const HELP = [['Работа', ['найди 5 компаний', 'запускай все', 'берём …', 'покажи все компании', 'что в работе?', 'почему …?', 'пропусти …']],
-    ['Письма', ['покажи письмо …', 'поправь …: …', 'одобряю …', 'одобряю все', 'отправил …', 'ответ от …: …']],
-    ['Настройки', ['настрой заново', 'покажи офис', 'помощь']]];
-  function renderHelp() {
-    set('mo-help-body', HELP.map(([g, list]) => `<h4>${esc(g)}</h4>` + list.map((x) => say(x)).join('')).join('')
-      + '<div class="mute" style="margin-top:6px;font-size:12px">Кнопка копирует фразу — вставьте её в чат Боссу и допишите, где «…».</div>');
-  }
 
-  // Вкладки (узкий экран) и место «Команды»: под офисом слева или вкладкой
-  const TABS = ['dec', 'board', 'flow', 'team', 'nums', 'help'];
-  let tab = 'dec';
-  try { const t = localStorage.getItem('myoffice.tab'); if (TABS.includes(t)) tab = t; } catch (_) {}
-  function showTab(t) {
-    tab = t; document.body.dataset.motab = t;
-    document.querySelectorAll('#mo-tabs [data-tab]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
-  }
-  let placedWide = null;
-  function place(wide) {
-    const team = document.getElementById('mo-team'), left = document.getElementById('mo-left'), mo = document.getElementById('mo');
-    if (!team || !left || !mo || placedWide === wide) return;
-    placedWide = wide;
-    if (wide) left.appendChild(team); else mo.appendChild(team);
-    if (wide && tab === 'team') showTab('dec');
-    const hd = document.getElementById('mo-help'); if (hd) hd.open = true;
-    renderHelp();
-    if (!document.body.dataset.motab) {
-      showTab(tab);
-      document.getElementById('mo-tabs').addEventListener('click', (e) => {
-        const b = e.target.closest('[data-tab]'); if (!b) return;
-        showTab(b.dataset.tab); try { localStorage.setItem('myoffice.tab', b.dataset.tab); } catch (_) {}
-      });
-    }
-    render();
-  }
+  let placed = false;
+  function place() { if (placed) return; placed = true; render(); }
 
   window.MO = { snapshot, place, teamRow, linkText, empty: () => applied === 0, src: SRC, label: SRC === 'events.js' ? '' : 'демо: ' + SRC };
 
@@ -917,16 +822,11 @@
     <div id="zoomui" hidden><button type="button" data-z="in" aria-label="+">+</button><button type="button" data-z="out" aria-label="−">−</button><button type="button" data-z="reset" aria-label="1:1">⟲</button></div>
   </div>
   </div>
-  <div class="mo-p" id="mo-team" data-pane="team"><h3>Команда</h3><div id="cards"></div></div>
   </div>
   <section id="mo">
-    <div class="mo-p" data-pane="wait"><h3>Ждёт вас</h3><ul id="mo-wait"></ul></div>
-    <nav id="mo-tabs"><button type="button" data-tab="dec">Решения</button><button type="button" data-tab="board">Конвейер</button><button type="button" data-tab="flow">Ход работы</button><button type="button" data-tab="team">Команда</button><button type="button" data-tab="nums">Цифры</button><button type="button" data-tab="help">Как управлять</button></nav>
-    <div class="mo-p" data-pane="dec"><h3>Решения</h3><div id="mo-dec"></div></div>
-    <div class="mo-p" data-pane="board"><h3>Конвейер</h3><div id="mo-board"></div></div>
-    <div class="mo-p" data-pane="flow"><h3>Ход работы</h3><ul id="mo-flow"></ul></div>
-    <div class="mo-p" data-pane="nums"><h3>Цифры</h3><ul id="mo-nums"></ul></div>
-    <div class="mo-p" data-pane="help"><details id="mo-help"><summary>Как управлять</summary><div id="mo-help-body"></div></details></div>
+    <div class="mo-p" id="mo-now"><h3>Сейчас от вас нужно</h3><ul id="mo-wait"></ul></div>
+    <div class="mo-p" id="mo-board-box"><h3>Компании</h3><div id="mo-board"></div><div id="mo-rest"></div></div>
+    <div class="mo-p" id="mo-team"><h3>Команда</h3><div id="cards"></div></div>
   </section>
   </div>
   <div id="news" hidden></div>
@@ -2717,20 +2617,16 @@
     if (!mainEl) return;
     const b = document.body;
     b.classList.remove('side');
-    const wide = window.innerWidth >= 1200;
-    b.classList.toggle('mo-wide', wide);
-    if (window.MO) window.MO.place(wide);
+    if (window.MO) window.MO.place();
     if (KIOSK || !animOn()) { b.classList.remove('fit'); return; }
     b.classList.add('fit');
     // Одна сетка: офис во всю ширину своей колонки (холст с целым внутренним масштабом растянут CSS,
     // pixelated). Упёрлись в высоту — сужаем всю сетку, чтобы края офиса и блоков под ним совпадали.
-    const wrap = document.querySelector('.wrap'), pad = 32, side = wide ? Math.min(620, Math.max(380, window.innerWidth * 0.32)) + 12 : 0;
-    const top = mainEl.getBoundingClientRect().top + window.scrollY;
-    b.style.setProperty('--mo-top', Math.ceil(top + 16) + 'px');   // правая колонка — ровно до низа окна
-    const maxH = wide ? window.innerHeight - top - 24 : Math.max(180, window.innerHeight * 0.6);
+    const wrap = document.querySelector('.wrap'), pad = 32;
+    const maxH = Math.max(180, window.innerHeight * 0.55);
     let page = window.innerWidth - pad;  // без потолка: сколько позволяет окно, столько и видно
-    const officeW = Math.min(page - side, (maxH - 4) * CW / CH + 4);
-    page = Math.floor(officeW + side);
+    const officeW = Math.min(page, (maxH - 4) * CW / CH + 4);
+    page = Math.floor(officeW);
     if (wrap) wrap.style.maxWidth = (page + pad) + 'px';
     mainEl.style.setProperty('--stage-w', '100%');
     mainEl.style.setProperty('--stage-h', Math.floor((officeW - 4) * CH / CW + 4) + 'px');
