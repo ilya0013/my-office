@@ -1,10 +1,11 @@
 <style>
   /* Мой офис: раскладка. ≥1200 px — слева офис и команда, справа панели; уже — офис сверху, под ним вкладки */
-  body.mo-wide #mo-layout { display:grid; grid-template-columns:minmax(0,1fr) 380px; gap:12px; align-items:start; }
-  body.fit #stage { width:100%; }
+  body.mo-wide #mo-layout { display:grid; grid-template-columns:minmax(0,1fr) clamp(360px, 28vw, 560px); gap:12px; align-items:start; }
+  /* офис не выше окна: под ним должна остаться видна команда (--mo-reserve — место под шапку и команду) */
+  body:not(.kiosk) #stage { width:min(100%, calc((100vh - var(--mo-reserve, 150px)) * 352 / 208)); margin:0 auto; }
+  body.mo-wide:not(.kiosk) #stage { --mo-reserve: 300px; }
   #mo { display:flex; flex-direction:column; gap:8px; margin-top:8px; min-width:0; }
   body.mo-wide #mo { margin-top:0; }
-  body.mo-wide.fit #stage { margin:0; }
   .mo-p { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:7px 10px; min-width:0; }
   #mo-team { margin-top:8px; }
   .mo-p h3 { margin:0 0 5px; font-size:11.5px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; }
@@ -33,6 +34,8 @@
   #cards { display:block; margin-top:0; max-height:none; }
   #cards .card { background:none; border:0; border-top:1px solid var(--line); border-radius:0; padding:4px 0; }
   #cards .card:first-child { border-top:0; }
+  body.mo-wide #cards { display:grid; grid-template-columns:repeat(auto-fill, minmax(380px, 1fr)); column-gap:18px; }
+  body.mo-wide #cards .card:nth-child(-n+2) { border-top:0; }
   .mo-tr { display:flex; align-items:center; gap:7px; font-size:12.5px; min-width:0; white-space:nowrap; }
   .mo-tr .sw { width:9px; height:9px; border-radius:50%; flex:none; }
   .mo-tr b { cursor:pointer; }
@@ -178,6 +181,19 @@
     }
   }
 
+  // Сводка из файлов от хука в конце хода — правда важнее догадок по командам сотрудников
+  function syncFiles(leads, at) {
+    for (const [slug, f] of Object.entries(leads)) {
+      const status = String(f['статус'] || '').trim().toLowerCase().replace(/[.;,]+$/, '');
+      if (f['письмо']) S.written.add(`письма/${slug}.md`);
+      if (!status || !/^[a-zа-яё][a-zа-яё -]{0,28}$/i.test(status)) continue;
+      if (!BASE_COLUMNS.includes(status) && !S.extra.includes(status)) S.extra.push(status);
+      const title = f['компания'] ? short(String(f['компания']).replace(/\s*\(.*$/, ''), 40) : slug;
+      const lead = S.leads[slug];
+      if (!lead) S.leads[slug] = { title, status, by: '', at };
+      else { lead.title = title; if (lead.status !== status) { lead.status = status; lead.at = at; flow(at, 'Файлы', '📋', status, slug); } }
+    }
+  }
   function flow(at, from, to, text, slug) { S.flow.push({ at, from, to, text, slug }); if (S.flow.length > 200) S.flow.shift(); }
   function step(a, text, at) {
     if (!text) return;
@@ -233,6 +249,7 @@
 
   function apply(e, at) {
     const kind = e.hook_event_name || e.event || e.type || '';
+    if (kind === 'MoFiles') { syncFiles(e.leads || {}, at); return; }
     if (kind === 'SubagentStart') {
       const known = e.agent_id && S.byAgent.get(e.agent_id);
       if (known && known.status !== 'running') S.byAgent.delete(e.agent_id);   // тот же id получил новое задание
