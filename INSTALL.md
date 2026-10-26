@@ -9,7 +9,7 @@
    пишет «Python was not found» — значит, Python нет); Mac — `python3 --version`. Есть Python 3.9 и новее — дальше.
    - **Codex на Windows:** песочница Codex не запускает Python и `winget` из папки пользователя
      («не распознается», «Отказано в доступе»), даже если они стоят. Поэтому в Codex на Windows проверку
-     Python, `winget` и все команды `python` офиса сразу запускай с запросом запуска вне песочницы
+     Python, `winget` и все команды `python` офиса (и проверку полным путём) сразу запускай с запросом запуска вне песочницы
      (владелец нажмёт «Разрешить»). Ставить Python — только если и вне песочницы его нет.
    - **Windows, нет:** `winget install -e --id Python.Python.3.12 --scope user --silent
      --accept-package-agreements --accept-source-agreements` (без прав администратора; программа может
