@@ -46,8 +46,8 @@
    **Codex:** хуки проекта он запускает только после разрешения владельца — скажи: «Наберите в
    Codex `/hooks` и разрешите хуки офиса, иначе экран останется пустым».
 6. **Только Claude Code на Windows без Git Bash** (у тебя нет инструмента Bash, только PowerShell):
-   в `.claude/settings.json` в каждом из шести хуков (`UserPromptSubmit`, `PreToolUse`,
-   `Notification`, `SubagentStart`, `SubagentStop`, `Stop`) замени два поля, символ в символ:
+   в `.claude/settings.json` в каждом из семи хуков (`UserPromptSubmit`, `PreToolUse`,
+   `PermissionRequest`, `Notification`, `SubagentStart`, `SubagentStop`, `Stop`) замени два поля, символ в символ:
    ```json
    "shell": "powershell",
    "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"$env:CLAUDE_PROJECT_DIR\\hooks\\office.ps1\""

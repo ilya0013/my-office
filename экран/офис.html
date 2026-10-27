@@ -551,7 +551,7 @@
     return a;
   }
   function stopSlot(a, e, at) {
-    if (a.status !== 'running') return;
+    if (a.status !== 'running' && a.status !== 'waiting') return;
     a.status = 'idle'; a.completedAt = a.returnedAt = at;
     step(a, '✅ сдал работу', at);
     const m = String(e.last_assistant_message || '').match(/Главное:\s*([^\r\n]+)/);
@@ -617,10 +617,11 @@
       return;
     }
     if (kind === 'PostToolUse') { trackLeads(e, who, at); return; }
-    // Claude Code: запрос разрешения — человечек ждёт вашего «Разрешить», а не печатает
-    if (kind === 'Notification') {
-      const m = String(e.message || '');
-      if (e.notification_type !== 'permission_prompt' && !/permission|разрешени/i.test(m)) return;
+    // Запрос разрешения (Claude Code и Codex: PermissionRequest; Claude Code ещё и Notification) —
+    // человечек ждёт вашего «Разрешить», а не печатает
+    if (kind === 'PermissionRequest' || kind === 'Notification') {
+      const m = kind === 'PermissionRequest' ? String(e.tool_name || '') : String(e.message || '');
+      if (kind === 'Notification' && e.notification_type !== 'permission_prompt' && !/permission|разрешени/i.test(m)) return;
       who.status = 'waiting'; who.waitText = '⏳ ждёт «Разрешить»' + (m ? ' — ' + short(m, 80) : '');
       step(who, '⏳ ждёт вашего «Разрешить»', at);
       flow(at, who.name, 'Вы', 'ждёт «Разрешить»');
@@ -754,6 +755,7 @@
         const send = l.status === 'одобрено' && mail ? ` <a class="mo-btn pri" href="${esc(`mailto:${mail}?subject=${encodeURIComponent(d['тема'] || '')}&body=${encodeURIComponent(plain(d['письмо']))}`)}">✉ открыть в почте</a>` : '';
         const cp = d['письмо'] ? `${d['тема'] ? ` <button type="button" class="mo-btn" data-copy="тема:${esc(slug)}">копировать тему</button>` : ''} <button type="button" class="mo-btn" data-copy="письмо:${esc(slug)}">копировать письмо</button>` : '';
         h += `<tr class="letter"><td colspan="7">${d['тема'] ? `<div class="mute">Тема: ${esc(d['тема'])}${send}${cp}</div>` : `<div>${send}${cp}</div>`}`
+          + (d['проверка'] ? `<div class="mute">${esc(d['проверка'])}</div>` : '')
           + (d['письмо'] ? `<div class="mo-letters"><div class="mo-letter"><h5>Письмо</h5>${md(d['письмо'])}</div>`
             + (d['перевод'] ? `<div class="mo-letter"><h5>Перевод для вас</h5>${md(d['перевод'])}</div>` : '') + '</div>'
             : `<div class="mute">Текст появится после конца хода команды. Файл: ${fileA(`письма/${slug}.md`, 'письмо')}</div>`) + '</td></tr>';

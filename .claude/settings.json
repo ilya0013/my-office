@@ -51,6 +51,17 @@
         ]
       }
     ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/hooks/office.sh\""
+          }
+        ]
+      }
+    ],
     "Notification": [
       {
         "hooks": [

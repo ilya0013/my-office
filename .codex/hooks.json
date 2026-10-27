@@ -2,6 +2,7 @@
   "hooks": {
     "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "bash hooks/office.sh", "commandWindows": "powershell -NoProfile -ExecutionPolicy Bypass -File hooks\\office.ps1", "timeout": 5 }] }],
     "PreToolUse": [{ "hooks": [{ "type": "command", "command": "bash hooks/office.sh", "commandWindows": "powershell -NoProfile -ExecutionPolicy Bypass -File hooks\\office.ps1", "timeout": 5 }] }],
+    "PermissionRequest": [{ "hooks": [{ "type": "command", "command": "bash hooks/office.sh", "commandWindows": "powershell -NoProfile -ExecutionPolicy Bypass -File hooks\\office.ps1", "timeout": 5 }] }],
     "SubagentStart": [{ "hooks": [{ "type": "command", "command": "bash hooks/office.sh", "commandWindows": "powershell -NoProfile -ExecutionPolicy Bypass -File hooks\\office.ps1", "timeout": 5 }] }],
     "SubagentStop": [{ "hooks": [{ "type": "command", "command": "bash hooks/office.sh", "commandWindows": "powershell -NoProfile -ExecutionPolicy Bypass -File hooks\\office.ps1", "timeout": 5 }] }],
     "Stop": [{ "hooks": [{ "type": "command", "command": "bash hooks/office.sh", "commandWindows": "powershell -NoProfile -ExecutionPolicy Bypass -File hooks\\office.ps1", "timeout": 5 }] }]
