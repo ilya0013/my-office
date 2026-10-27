@@ -6,7 +6,7 @@
     "**/.claude/rules/**"
   ],
   "permissions": {
-    "defaultMode": "acceptEdits",
+    "defaultMode": "auto",
     "allow": [
       "WebSearch",
       "WebFetch",
@@ -41,6 +41,17 @@
       }
     ],
     "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/hooks/office.sh\""
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
       {
         "hooks": [
           {

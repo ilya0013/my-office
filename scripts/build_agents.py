@@ -1,5 +1,5 @@
 """Собирает агентов из роли/*.md: .claude/agents/<name>.md и .codex/agents/<name>.toml.
-Тело роли одно и то же в обеих программах. Роль без поля name (Босс) пропускается.
+Тело роли одно и то же в обеих программах. Роль без поля name (Управляющий) пропускается.
 """
 from pathlib import Path
 
@@ -20,7 +20,7 @@ def main():
     built = set()
     for path in sorted((ROOT / "роли").glob("*.md")):
         if path.name.startswith("_") or not path.read_text(encoding="utf-8").startswith("---"):
-            continue  # шаблон и Босс — не сотрудники
+            continue  # шаблон и Управляющий — не сотрудники
         meta, body = parse(path)
         name = meta["name"]
         assert "'''" not in body, f"{path.name}: ''' ломает TOML"

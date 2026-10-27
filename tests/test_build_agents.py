@@ -16,7 +16,7 @@ from pathlib import Path
 CODEX_TOML = re.compile(r"((?:\w+ = \"(?:[^\"\\\n]|\\[\"\\])*\"\n)+)developer_instructions = '''\n(.*)'''\n", re.S)
 
 ROOT = Path(__file__).resolve().parent.parent
-WORKERS = ["scout", "manager", "checker"]
+WORKERS = ["scout", "analyst", "checker"]
 
 
 def frontmatter(path):

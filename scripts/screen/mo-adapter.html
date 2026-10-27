@@ -47,9 +47,9 @@
   const BASE_COLUMNS = ['запас', 'новый', 'не подходит', 'письмо готово', 'проверено', 'одобрено', 'отправлено', 'ответ', 'встреча', 'отказ'];
   // колонки конвейера: известные статусы и встреченные в файлах новые (перед «одобрено»)
   const cols = () => { const k = BASE_COLUMNS.indexOf('одобрено'); return [...BASE_COLUMNS.slice(0, k), ...S.extra, ...BASE_COLUMNS.slice(k)]; };
-  const NAMES = { boss: 'Босс', scout: 'Разведчик', manager: 'Менеджер', checker: 'Проверяющий', worker: 'Сотрудник' };
-  const TITLES = { boss: 'руководитель', scout: 'ищет кандидатов', manager: 'ведёт компанию', checker: 'проверяет письма', worker: 'помощник' };
-  const COLORS = { 'Вы': '#ffffff', 'Босс': '#ffd75e', 'Разведчик': '#6fcf97', 'Проверяющий': '#9ec5ff', 'Менеджер': '#f0a35e', 'Сотрудник': '#c9cbe0' };
+  const NAMES = { boss: 'Управляющий', scout: 'Скаут', manager: 'Аналитик', checker: 'Проверяющий', worker: 'Помощник Управляющего' };
+  const TITLES = { boss: 'руководитель', scout: 'ищет кандидатов', manager: 'ведёт компанию', checker: 'проверяет письма', worker: 'служебное задание' };
+  const COLORS = { 'Вы': '#ffffff', 'Управляющий': '#ffd75e', 'Скаут': '#6fcf97', 'Проверяющий': '#9ec5ff', 'Аналитик': '#f0a35e', 'Помощник Управляющего': '#c9cbe0' };
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const short = (s, n = 60) => { s = String(s || '').replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
   const baseName = (n) => String(n || '').replace(/ \d+$/, '');
@@ -63,7 +63,7 @@
     return { id, role, name, status: 'idle', task: '', step: '', recent: [], parent: null, since, completedAt: null, assignedAt: null, returnedAt: null };
   }
   function reset() {
-    S = { boss: mk('boss', 'boss', 'Босс', 0), slots: [], byAgent: new Map(), bySession: new Map(), bossSession: '',
+    S = { boss: mk('boss', 'boss', 'Управляющий', 0), slots: [], byAgent: new Map(), bySession: new Map(), bossSession: '',
       pending: [], leads: {}, flow: [], extra: [], written: new Set(), maxPar: 0, acts: {}, waitText: '', seq: 1 };
     applied = 0;
   }
@@ -74,7 +74,8 @@
     t = String(t || '').toLowerCase().trim();
     if (/scout|развед/.test(t)) return 'scout';
     if (/check|провер/.test(t)) return 'checker';
-    if (/manag|менедж/.test(t)) return 'manager';
+    if (/analyst|аналит|manag|менедж/.test(t)) return 'manager';
+    if (/^(general-purpose|explore|plan|claude-code-guide|statusline-setup|default|worker|explorer)$/.test(t)) return 'worker';
     const k = t.replace(/[^\wа-яё-]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 24);
     return guess || !k ? 'worker' : 'w-' + k;
   }
@@ -117,7 +118,7 @@
     if (/каталог\.md$/.test(p)) return 'каталог';
     if (/ПРАВИЛА\.md$/i.test(p)) return 'правила';
     if (/роли\//.test(p)) return 'свою инструкцию';
-    if (/входящие\.md$/.test(p)) return 'входящие';
+    if (/ваш-ход\.md$/.test(p)) return '«Ваш ход»';
     if (/(^|\/)_шаблон/.test(p)) return 'шаблон досье';
     if (/SKILL\.md$/i.test(p)) return 'инструкцию инструмента';
     return short(p.split('/').pop() || 'файл', 40);
@@ -231,16 +232,16 @@
     step(a, '📥 получил задание', at);
     if (e.agent_id) S.byAgent.set(e.agent_id, a);
     if (e.session_id && S.bossSession && e.session_id !== S.bossSession) S.bySession.set(e.session_id, a);
-    flow(at, 'Босс', a.name, a.task || 'новое задание');
+    flow(at, 'Управляющий', a.name, a.task || 'новое задание');
     S.maxPar = Math.max(S.maxPar, runningSubs());
     return a;
   }
   function stopSlot(a, e, at) {
-    if (a.status !== 'running') return;
+    if (a.status !== 'running' && a.status !== 'waiting') return;
     a.status = 'idle'; a.completedAt = a.returnedAt = at;
     step(a, '✅ сдал работу', at);
     const m = String(e.last_assistant_message || '').match(/Главное:\s*([^\r\n]+)/);
-    flow(at, a.name, 'Босс', 'сдал работу' + (m ? ' — ' + short(m[1], 90) : ''));
+    flow(at, a.name, 'Управляющий', 'сдал работу' + (m ? ' — ' + short(m[1], 90) : ''));
   }
   function actor(e, kind) {
     if (e.agent_id) return S.byAgent.get(e.agent_id) || (kind === 'SubagentStart' ? null : startSlot(e, Date.now()));
@@ -251,7 +252,7 @@
       let a = S.bySession.get(sid);
       if (!a) { a = [...S.slots].reverse().find((x) => x.status === 'running' && ![...S.bySession.values()].includes(x)); if (a) S.bySession.set(sid, a); }
       if (a) return a;
-      // никто из сотрудников не работает — это новая сессия самого Босса (владелец открыл новый чат)
+      // никто из сотрудников не работает — это новая сессия самого Управляющего (владелец открыл новый чат)
       S.bossSession = sid;
     }
     return S.boss;
@@ -265,7 +266,7 @@
       if (known && known.status !== 'running') S.byAgent.delete(e.agent_id);   // тот же id получил новое задание
       const a = known && known.status === 'running' ? known : startSlot(e, at);
       if (e.source === 'agent') {
-        // Codex: Босс сам пишет, кого отправил, — значит, он за столом и раздаёт работу
+        // Codex: Управляющий сам пишет, кого отправил, — значит, он за столом и раздаёт работу
         S.boss.status = 'running'; S.waitText = '';
         step(S.boss, '📨 → ' + baseName(a.name), at);
       }
@@ -276,14 +277,14 @@
     if (kind === 'Stop') {
       if (who !== B) { stopSlot(who, e, at); return; }
       B.completedAt = at;
-      // source:"agent" — Босс сам сообщил, что ждёт владельца
+      // source:"agent" — Управляющий сам сообщил, что ждёт владельца
       const bg = e.source !== 'agent' && ((e.background_tasks || []).some((t) => t && t.status === 'running') || runningSubs() > 0);
       if (bg) { B.status = 'running'; step(B, '⏳ ждёт сотрудников', at); }   // сидит за столом и ждёт отчётов
       else {
-        B.status = 'waiting';
+        B.status = 'waiting'; B.waitText = ''; B.permAt = 0;
         S.waitText = short(String(e.last_assistant_message || '').split(/\r?\n/).find((l) => l.trim()) || '', 140);
         step(B, '🙋 ждёт вас', at);
-        flow(at, 'Босс', 'Вы', 'ждёт вашего решения' + (S.waitText ? ' — ' + S.waitText : ''));
+        flow(at, 'Управляющий', 'Вы', 'ждёт вашего решения' + (S.waitText ? ' — ' + S.waitText : ''));
       }
       return;
     }
@@ -298,13 +299,22 @@
       }
       B.status = 'running'; S.waitText = '';
       if (/^\s*<task-notification>/.test(p)) step(B, '📬 читает отчёт', at);
-      else { B.task = short(p, 80); step(B, '💬 задание от вас', at); flow(at, 'Вы', 'Босс', short(p, 90)); }
+      else { B.task = short(p, 80); step(B, '💬 задание от вас', at); flow(at, 'Вы', 'Управляющий', short(p, 90)); }
       return;
     }
     if (kind === 'PostToolUse') { trackLeads(e, who, at); return; }
+    // Запрос разрешения (Claude Code и Codex) — человечек ждёт вашего «Разрешить», а не печатает
+    if (kind === 'PermissionRequest') {
+      if (who.status === 'waiting') return;
+      const m = String(e.tool_name || '');
+      who.status = 'waiting'; who.waitText = '⏳ ждёт «Разрешить»' + (m ? ' — ' + short(m, 80) : ''); who.permAt = at;
+      step(who, '⏳ ждёт вашего «Разрешить»', at);
+      flow(at, who.name, 'Вы', 'ждёт «Разрешить»');
+      return;
+    }
     if (!e.tool_name) return;
     const n = String(e.tool_name).toLowerCase(), i = e.tool_input || {};
-    who.status = 'running';
+    who.status = 'running'; who.waitText = ''; who.permAt = 0;
     if (who === B) S.waitText = '';
     if (/^(agent|task)$/.test(n) || /spawn_agent/.test(n)) {
       const t0 = i.subagent_type || i.agent_type || i.role;
@@ -322,8 +332,10 @@
   }
 
   function out(a) {
-    const t = a.status === 'waiting' ? (S.waitText || 'ждёт вашего решения') : a.task;
-    return { id: a.id, name: a.name, role: titleOf(a.role), status: a.status, since: a.since,
+    // Codex «Подтверждать за меня» решает запрос сам за секунды — руку поднимаем, только если ждут дольше 8 с
+    const st = a.status === 'waiting' && a.permAt && Date.now() - a.permAt < 8000 ? 'running' : a.status;
+    const t = st === 'waiting' ? (a.waitText || S.waitText || 'ждёт вашего решения') : a.task;
+    return { id: a.id, name: a.name, role: titleOf(a.role), status: st, since: a.since,
       task: t || a.step ? { title: t || '', step: a.status === 'running' ? a.step : '' } : null,
       parent: a.parent, recent: a.recent.slice(), completedAt: a.completedAt, assignedAt: a.assignedAt, returnedAt: a.returnedAt };
   }
@@ -359,7 +371,7 @@
     }
     if (all.length && !t0) t0 = Date.now();
     const limit = PLAY ? Math.min(all.length, Math.floor((Date.now() - t0) / STEP_MS) + 1) : all.length;
-    // Codex: Босс и сотрудники сами дописывают события с source:"agent". Если в файле есть настоящие события
+    // Codex: Управляющий и сотрудники сами дописывают события с source:"agent". Если в файле есть настоящие события
     // хуков той же сессии (или у агентского события нет сессии), агентские пропускаем — иначе всё вдвойне.
     const realS = new Set(all.filter((x) => x.e.source !== 'agent').map((x) => x.e.session_id || ''));
     const dup = (e) => e.source === 'agent' && realS.size > 0 && (!e.session_id || realS.has(e.session_id));
@@ -400,7 +412,7 @@
     'письмо готово': ['письмо на проверке', ''], 'отправлено': ['отправлено', 'good'], 'ответ': ['пришёл ответ', 'good'],
     'встреча': ['встреча', 'good'], 'запас': ['в запасе', 'bad'], 'не подходит': ['не подошла', 'bad'], 'отказ': ['отказ', 'bad'] };
   const ORDER = Object.keys(STAGE);
-  // «неизвестно» от Разведчика — пустая клетка: так таблица читается легче
+  // «неизвестно» от Скаута — пустая клетка: так таблица читается легче
   const info = (slug) => Object.fromEntries(Object.entries((D && D[slug]) || {}).map(([k, v]) => [k, /^неизвестн/i.test(String(v).trim()) ? '' : v]));
   // проба мастера настройки: видна в «Базе», но не ждёт вашего «одобряю»
   const probe = (slug) => /^да/i.test(String((D && D[slug] && D[slug]['проба']) || ''));
@@ -416,8 +428,8 @@
     const list = rows();
     const n = list.length, wait = waiting();
     set('mo-base-n', n ? `<b>${n}</b>` : '');
-    set('mo-base-sum', n ? `Компаний: ${n}` + (wait ? ` · ждут вашего «одобряю»: ${wait} — ответьте Боссу в чате` : '') : '');
-    if (!n) return set('mo-base-table', '<div class="mute">Компаний пока нет. Напишите Боссу в чате: «найди 5 компаний».</div>');
+    set('mo-base-sum', n ? `Компаний: ${n}` + (wait ? ` · ждут вашего «одобряю»: ${wait} — ответьте Управляющему в чате` : '') : '');
+    if (!n) return set('mo-base-table', '<div class="mute">Компаний пока нет. Напишите Управляющему в чате: «найди 5 компаний».</div>');
     const body = list.map(([slug, l, d]) => {
       const [stage, own] = STAGE[l.status] || [l.status, ''];
       const cls = probe(slug) && own === 'you' ? '' : own;
@@ -428,7 +440,9 @@
       if (opened[slug]) {
         const mail = mailOf(d);
         const send = l.status === 'одобрено' && mail ? ` <a class="mo-btn pri" href="${esc(`mailto:${mail}?subject=${encodeURIComponent(d['тема'] || '')}&body=${encodeURIComponent(plain(d['письмо']))}`)}">✉ открыть в почте</a>` : '';
-        h += `<tr class="letter"><td colspan="7">${d['тема'] ? `<div class="mute">Тема: ${esc(d['тема'])}${send}</div>` : send}`
+        const cp = d['письмо'] ? `${d['тема'] ? ` <button type="button" class="mo-btn" data-copy="тема:${esc(slug)}">копировать тему</button>` : ''} <button type="button" class="mo-btn" data-copy="письмо:${esc(slug)}">копировать письмо</button>` : '';
+        h += `<tr class="letter"><td colspan="7">${d['тема'] ? `<div class="mute">Тема: ${esc(d['тема'])}${send}${cp}</div>` : `<div>${send}${cp}</div>`}`
+          + (d['проверка'] ? `<div class="mute">${esc(d['проверка'])}</div>` : '')
           + (d['письмо'] ? `<div class="mo-letters"><div class="mo-letter"><h5>Письмо</h5>${md(d['письмо'])}</div>`
             + (d['перевод'] ? `<div class="mo-letter"><h5>Перевод для вас</h5>${md(d['перевод'])}</div>` : '') + '</div>'
             : `<div class="mute">Текст появится после конца хода команды. Файл: ${fileA(`письма/${slug}.md`, 'письмо')}</div>`) + '</td></tr>';
@@ -443,8 +457,8 @@
     // строка статуса: решения — в чате, здесь только что происходит
     const working = S.slots.filter((a) => a.status === 'running').length;
     const wait = waiting();
-    const st = S.boss.status === 'waiting' ? 'Босс ждёт вас в чате' + (wait ? ` · писем ждут «одобряю»: ${wait}` : '')
-      : working ? `Офис работает — сотрудников за делом: ${working}` : S.boss.status === 'running' ? 'Офис работает' : !all.length ? '' : 'Тихо — напишите Боссу, что сделать';   // событий нет — говорит плашка над офисом
+    const st = S.boss.status === 'waiting' ? 'Управляющий ждёт вас в чате' + (wait ? ` · писем ждут «одобряю»: ${wait}` : '')
+      : working ? `Офис работает — сотрудников за делом: ${working}` : S.boss.status === 'running' ? 'Офис работает' : !all.length ? '' : 'Тихо — напишите Управляющему, что сделать';   // событий нет — говорит плашка над офисом
     set('mo-status', st + (wait && S.boss.status !== 'waiting' ? ` · писем ждут вашего «одобряю»: ${wait}` : ''));
     const el = document.getElementById('mo-status'); if (el) el.classList.toggle('you', S.boss.status === 'waiting');
     renderBase();
@@ -465,19 +479,56 @@
   // Markdown письма → текст: ссылка — её текст, заголовок — жирным
   const md = (s) => esc(String(s || '').trim()).replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/^#+\s*(.+)$/gm, '<b>$1</b>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
   const plain = (s) => String(s || '').trim().replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)');
-  // Скачать для Excel: CSV с «;» и BOM — Excel открывает двойным щелчком с кириллицей
-  function csv() {
-    const q = (v) => '"' + String(v ?? '').replace(/"/g, '""').trim() + '"';
+  // Скачать для Excel: .xlsx без библиотек (zip без сжатия) — одинаково открывается в Excel, Numbers и Google Таблицах
+  const CRC = (() => { const t = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  const crc32 = (b) => { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+  function zip(files) {
+    const enc = new TextEncoder(), parts = [], dir = [];
+    let off = 0;
+    const u16 = (v) => [v & 255, (v >>> 8) & 255], u32 = (v) => [v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255];
+    for (const [name, text] of files) {
+      const nb = enc.encode(name), data = enc.encode(text), c = crc32(data);
+      const common = [...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(c), ...u32(data.length), ...u32(data.length), ...u16(nb.length), ...u16(0)];
+      const local = new Uint8Array([...u32(0x04034b50), ...common]);
+      parts.push(local, nb, data);
+      dir.push(new Uint8Array([...u32(0x02014b50), ...u16(20), ...common, ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(off)]), nb);
+      off += local.length + nb.length + data.length;
+    }
+    const size = dir.reduce((n, x) => n + x.length, 0);
+    return new Blob([...parts, ...dir, new Uint8Array([...u32(0x06054b50), ...u16(0), ...u16(0), ...u16(files.length), ...u16(files.length), ...u32(size), ...u32(off), ...u16(0)])],
+      { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  }
+  function xlsx() {
+    const x = (v) => String(v ?? '').trim().replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const head = ['Компания', 'Город', 'Сайт', 'Стадия', 'Почему подходит', 'Контакт', 'Тема', 'Письмо', 'Перевод'];
-    const lines = rows().map(([slug, l, d]) => [l.title, d['город'], d['сайт'], (probe(slug) ? 'проба · ' : '') + (STAGE[l.status] || [l.status])[0], d['почему'], mailOf(d) || d['контакт'], d['тема'], plain(d['письмо']), plain(d['перевод'])].map(q).join(';'));
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob(['\ufeff' + [head.map(q).join(';'), ...lines].join('\r\n')], { type: 'text/csv;charset=utf-8' }));
-    a.download = 'компании.csv'; document.body.appendChild(a); a.click(); a.remove();
+    const data = [head, ...rows().map(([slug, l, d]) => [l.title, d['город'], d['сайт'], (probe(slug) ? 'проба · ' : '') + (STAGE[l.status] || [l.status])[0], d['почему'], mailOf(d) || d['контакт'], d['тема'], plain(d['письмо']), plain(d['перевод'])])];
+    const X = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>', M = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+    const R = 'http://schemas.openxmlformats.org/package/2006/relationships', O = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+    const sheet = `${X}<worksheet xmlns="${M}"><cols><col min="1" max="7" width="22" customWidth="1"/><col min="8" max="9" width="60" customWidth="1"/></cols><sheetData>`
+      + data.map((r, ri) => `<row r="${ri + 1}">` + r.map((v, ci) => `<c r="${String.fromCharCode(65 + ci)}${ri + 1}" t="inlineStr"${ri ? ' s="1"' : ''}><is><t xml:space="preserve">${x(v)}</t></is></c>`).join('') + '</row>').join('')
+      + '</sheetData></worksheet>';
+    const ct = 'application/vnd.openxmlformats-officedocument.spreadsheetml';
+    download(zip([
+      ['[Content_Types].xml', `${X}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="${ct}.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="${ct}.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="${ct}.styles+xml"/></Types>`],
+      ['_rels/.rels', `${X}<Relationships xmlns="${R}"><Relationship Id="rId1" Type="${O}/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
+      ['xl/workbook.xml', `${X}<workbook xmlns="${M}" xmlns:r="${O}"><sheets><sheet name="Компании" sheetId="1" r:id="rId1"/></sheets></workbook>`],
+      ['xl/_rels/workbook.xml.rels', `${X}<Relationships xmlns="${R}"><Relationship Id="rId1" Type="${O}/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="${O}/styles" Target="styles.xml"/></Relationships>`],
+      ['xl/styles.xml', `${X}<styleSheet xmlns="${M}"><fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment wrapText="1" vertical="top"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`],
+      ['xl/worksheets/sheet1.xml', sheet],
+    ]), 'компании.xlsx');
+  }
+  function download(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
+  // Копировать тему или письмо — вставить в любую почту без подключения
+  function copy(text, btn) {
+    const done = () => { const t0 = btn.textContent; btn.textContent = '✓ скопировано'; setTimeout(() => { btn.textContent = t0; }, 1500); };
+    const old = () => { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); done(); } catch (_) {} ta.remove(); };
+    try { navigator.clipboard.writeText(text).then(done, old); } catch (_) { old(); }
   }
   document.addEventListener('click', (e) => {
-    const t = e.target.closest && e.target.closest('[data-letter],[data-view],#mo-csv');
+    const t = e.target.closest && e.target.closest('[data-letter],[data-view],[data-copy],#mo-csv');
     if (!t) return;
-    if (t.id === 'mo-csv') return csv();
+    if (t.id === 'mo-csv') return xlsx();
+    if (t.dataset.copy) { const [kind, slug] = t.dataset.copy.split(':'), d = (D && D[slug]) || {}; return copy(kind === 'тема' ? String(d['тема'] || '') : plain(d['письмо']), t); }
     if (t.dataset.view) return showView(t.dataset.view);
     opened[t.dataset.letter] = !opened[t.dataset.letter]; render();
   });
