@@ -347,8 +347,8 @@
   .mo-letters { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:10px; }
   .mo-letter { white-space:pre-wrap; font-size:12.5px; line-height:1.45; }
   .mo-letter h5 { margin:0 0 4px; font-size:12px; color:var(--muted); font-weight:600; }
-  .mo-copy { background:none; border:0; padding:0 0 0 8px; color:var(--link); font:inherit; font-size:11.5px; font-weight:400; cursor:pointer; }
-  .mo-copy:hover { text-decoration:underline; }
+  .mo-copy { margin-left:8px; background:rgba(158,197,255,0.08); border:1px solid var(--link); border-radius:999px; padding:1px 9px; color:var(--link); font:inherit; font-size:11.5px; font-weight:500; cursor:pointer; }
+  .mo-copy:hover { background:rgba(158,197,255,0.2); }
 </style>
 <script>
 /* «Мой офис»: события хуков (экран/events.js, строки ev({...});) → снимок в формате ленты Cubicle
@@ -755,7 +755,8 @@
         + `<td>${hasLetter ? `<button type="button" class="mo-btn" data-letter="${esc(slug)}">${opened[slug] ? 'скрыть' : 'читать'}</button>` : ''}</td></tr>`;
       if (opened[slug]) {
         const mail = mailOf(d);
-        const send = l.status === 'одобрено' && mail ? ` <a class="mo-btn pri" href="${esc(`mailto:${mail}?subject=${encodeURIComponent(d['тема'] || '')}&body=${encodeURIComponent(plain(d['письмо']))}`)}">✉ открыть в почте</a>` : '';
+        // письмо одобрено (или уже отмечено «отправил») — его можно открыть в почте компьютера
+        const send = (l.status === 'одобрено' || l.status === 'отправлено') && mail ? ` <a class="mo-btn pri" href="${esc(`mailto:${mail}?subject=${encodeURIComponent(d['тема'] || '')}&body=${encodeURIComponent(plain(d['письмо']))}`)}">✉ открыть в почте</a>` : '';
         // «копировать» стоит у того, что копирует: у темы и в заголовке письма
         const cp = (kind, what) => `<button type="button" class="mo-copy" data-copy="${kind}:${esc(slug)}" title="Скопировать ${what}">⧉ копировать</button>`;
         h += `<tr class="letter"><td colspan="7">${d['тема'] ? `<div class="mute">Тема: ${esc(d['тема'])}${cp('тема', 'тему')}${send}</div>` : send ? `<div>${send}</div>` : ''}`
