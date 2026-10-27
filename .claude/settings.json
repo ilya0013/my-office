@@ -6,7 +6,7 @@
     "**/.claude/rules/**"
   ],
   "permissions": {
-    "defaultMode": "acceptEdits",
+    "defaultMode": "auto",
     "allow": [
       "WebSearch",
       "WebFetch",
