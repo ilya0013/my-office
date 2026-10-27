@@ -21,6 +21,15 @@ class Settings(unittest.TestCase):
         for section in (LETTER, CHECK):
             self.assertIn(section, text("каталог.md"))
 
+    def test_lines_have_retail_price_and_no_codes(self):
+        # без розничной цены Аналитику не на чем посчитать выгоду; коды линий утекали в «почему» на экран
+        rows = [r for r in text("каталог.md").split("## Что предлагаем")[1].split("\n## ")[0].splitlines() if r.startswith("| ")]
+        head, lines = rows[0].split("|"), rows[1:]
+        self.assertIn(" Рек. цена ", head)
+        self.assertNotIn(" Код ", head)
+        for row in lines:
+            self.assertRegex(row.split("|")[head.index(" Рек. цена ")], r"\d", row)
+
     def test_roles_read_settings_from_catalog(self):
         self.assertIn(LETTER[3:], text("роли/аналитик.md"))
         self.assertIn(CHECK[3:], text("роли/проверяющий.md"))
