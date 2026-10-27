@@ -6,7 +6,7 @@ param([int]$Port = 8765, [int]$IdleSeconds = 600, [switch]$Free)
 function Stop-OldScreen {
   try { Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 -Headers @{ 'X-Office' = '1' } "http://localhost:$Port/__office-quit" | Out-Null; Start-Sleep 1 } catch { }
 }
-if ($Free) { Stop-OldScreen; exit 0 }
+$busy = "Порт $Port занят: экран офиса до v0.3.4 или другая программа. Закройте вкладку со старым экраном — он погаснет сам через 10 минут, — или скажите Управляющему той папки «закончили»."
 $root = [IO.Path]::GetFullPath((Split-Path $PSScriptRoot)).TrimEnd([char]92) + [char]92   # с разделителем: соседняя «папкаX» не пройдёт
 $types = @{ '.html' = 'text/html; charset=utf-8'; '.js' = 'text/javascript; charset=utf-8'; '.md' = 'text/plain; charset=utf-8';
   '.css' = 'text/css'; '.png' = 'image/png'; '.json' = 'application/json'; '.txt' = 'text/plain; charset=utf-8' }
@@ -15,14 +15,16 @@ $l.Prefixes.Add("http://localhost:$Port/")
 try { $l.Start() } catch {
   Stop-OldScreen
   $l = [Net.HttpListener]::new(); $l.Prefixes.Add("http://localhost:$Port/")
-  try { $l.Start() } catch { Write-Error "Порт $Port занят другой программой — закройте её или скажите Управляющему «закончили» в другом офисе."; exit 1 }
+  try { $l.Start() } catch { Write-Error $busy; exit 1 }
 }
+if ($Free) { $l.Stop(); exit 0 }   # только освободить порт
 while ($true) {
   $task = $l.GetContextAsync()
   if (-not $task.Wait($IdleSeconds * 1000)) { break }   # тишина — экран закрыт
   $c = $task.Result
   $r = $c.Response
   try {
+    if (-not $c.Request.IsLocal) { $r.StatusCode = 403; continue }   # Host localhost можно прислать и с другого компьютера
     $rel = [Uri]::UnescapeDataString($c.Request.Url.AbsolutePath).TrimStart('/')
     if ($rel -eq '__office-quit' -and $c.Request.Headers['X-Office'] -eq '1') { $r.StatusCode = 204; break }   # ответ закроет finally; свой заголовок: чужая страница так не спросит
     if (-not $rel) { $r.Redirect('/' + [Uri]::EscapeUriString('экран/офис.html')); continue }

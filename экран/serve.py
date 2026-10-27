@@ -52,11 +52,15 @@ Handler.extensions_map.update({'.js': 'text/javascript; charset=utf-8', '.md': '
 
 def free():
     """Гасит экран офиса на порту (любой папки: этой он тоже не нужен — запустим заново)."""
-    try:
-        urllib.request.urlopen(urllib.request.Request(f'http://127.0.0.1:{PORT}/__office-quit', headers={'X-Office': '1'}), timeout=2)
+    try:   # localhost, не 127.0.0.1: экран на PowerShell слушает только Host localhost
+        urllib.request.urlopen(urllib.request.Request(f'http://localhost:{PORT}/__office-quit', headers={'X-Office': '1'}), timeout=2)
     except Exception:
         return
     time.sleep(1)
+
+
+BUSY = (f'Порт {PORT} занят: экран офиса до v0.3.4 или другая программа. Закройте вкладку со старым экраном —'
+        ' он погаснет сам через 10 минут, — или скажите Управляющему той папки «закончили».')
 
 
 def start():
@@ -67,10 +71,12 @@ def start():
         return None
 
 
-if FREE:
-    free(); sys.exit(0)
 server = start() or (free(), start())[1]
+if FREE:   # только освободить порт
+    if server:
+        server.server_close()
+    sys.exit(0 if server else BUSY)
 if not server:
-    sys.exit(f'Порт {PORT} занят другой программой — закройте её или скажите Управляющему «закончили» в другом офисе.')
+    sys.exit(BUSY)
 threading.Thread(target=watchdog, daemon=True).start()
 server.serve_forever()
