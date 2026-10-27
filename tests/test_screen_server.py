@@ -63,7 +63,10 @@ class TakeOver(unittest.TestCase):
     def test_old_screen_is_reported(self):
         # экран v0.3.3 не знает /__office-quit: порт не освободить — скажи об этом, а не молчи
         port = free_port()
-        old = subprocess.run(["git", "-C", str(ROOT), "show", "8fb0c1b:экран/serve.py"], capture_output=True, check=True).stdout
+        try:
+            old = subprocess.run(["git", "-C", str(ROOT), "show", "8fb0c1b:экран/serve.py"], capture_output=True, check=True).stdout
+        except (OSError, subprocess.CalledProcessError):
+            self.skipTest("нет истории git (офис из архива)")
         with tempfile.TemporaryDirectory() as tmp:
             a, b = office(Path(tmp), "первый"), office(Path(tmp), "второй")
             (a / "serve.py").write_bytes(old)
