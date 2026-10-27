@@ -347,6 +347,8 @@
   .mo-letters { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:10px; }
   .mo-letter { white-space:pre-wrap; font-size:12.5px; line-height:1.45; }
   .mo-letter h5 { margin:0 0 4px; font-size:12px; color:var(--muted); font-weight:600; }
+  .mo-copy { margin-left:8px; background:rgba(158,197,255,0.08); border:1px solid var(--link); border-radius:999px; padding:1px 9px; color:var(--link); font:inherit; font-size:11.5px; font-weight:500; cursor:pointer; }
+  .mo-copy:hover { background:rgba(158,197,255,0.2); }
 </style>
 <script>
 /* «Мой офис»: события хуков (экран/events.js, строки ev({...});) → снимок в формате ленты Cubicle
@@ -753,11 +755,13 @@
         + `<td>${hasLetter ? `<button type="button" class="mo-btn" data-letter="${esc(slug)}">${opened[slug] ? 'скрыть' : 'читать'}</button>` : ''}</td></tr>`;
       if (opened[slug]) {
         const mail = mailOf(d);
+        // только одобренное и ещё не отправленное: кнопка открывает новое письмо, а не то, что ушло
         const send = l.status === 'одобрено' && mail ? ` <a class="mo-btn pri" href="${esc(`mailto:${mail}?subject=${encodeURIComponent(d['тема'] || '')}&body=${encodeURIComponent(plain(d['письмо']))}`)}">✉ открыть в почте</a>` : '';
-        const cp = d['письмо'] ? `${d['тема'] ? ` <button type="button" class="mo-btn" data-copy="тема:${esc(slug)}">копировать тему</button>` : ''} <button type="button" class="mo-btn" data-copy="письмо:${esc(slug)}">копировать письмо</button>` : '';
-        h += `<tr class="letter"><td colspan="7">${d['тема'] ? `<div class="mute">Тема: ${esc(d['тема'])}${send}${cp}</div>` : `<div>${send}${cp}</div>`}`
+        // «копировать» стоит у того, что копирует: у темы и в заголовке письма
+        const cp = (kind, what) => `<button type="button" class="mo-copy" data-copy="${kind}:${esc(slug)}" title="Скопировать ${what}">⧉ копировать</button>`;
+        h += `<tr class="letter"><td colspan="7">${d['тема'] ? `<div class="mute">Тема: ${esc(d['тема'])}${cp('тема', 'тему')}${send}</div>` : send ? `<div>${send}</div>` : ''}`
           + (d['проверка'] ? `<div class="mute">${esc(d['проверка'])}</div>` : '')
-          + (d['письмо'] ? `<div class="mo-letters"><div class="mo-letter"><h5>Письмо</h5>${md(d['письмо'])}</div>`
+          + (d['письмо'] ? `<div class="mo-letters"><div class="mo-letter"><h5>Письмо${cp('письмо', 'текст письма')}</h5>${md(d['письмо'])}</div>`
             + (d['перевод'] ? `<div class="mo-letter"><h5>Перевод для вас</h5>${md(d['перевод'])}</div>` : '') + '</div>'
             : `<div class="mute">Текст появится после конца хода команды. Файл: ${fileA(`письма/${slug}.md`, 'письмо')}</div>`) + '</td></tr>';
       }
@@ -1060,7 +1064,7 @@
     voiceSex: 'Голос', voiceSexAuto: 'Как нарисован', female: 'Женский', male: 'Мужской', voiceSexMode: 'Женщины / мужчины', voiceSexLook: 'Как нарисованы', voiceSexMix: 'Вперемешку', voiceSexF: 'Все женщины', voiceSexM: 'Все мужчины',
     voiceF: 'Женский голос', voiceM: 'Мужской голос', voiceNoF: 'В этом браузере нет женского голоса для русского языка.', openEdge: 'Открыть в Edge', voiceNoM: 'В этом браузере нет мужского голоса для русского языка.',
     voiceTry: 'Послушать', voiceTryF: 'Здравствуйте, это женский голос.', voiceTryM: 'Здравствуйте, это мужской голос.', sHuman: 'Ваш стол', sNotify: 'Уведомление на столе',
-    human: 'Ваш стол: кто ждёт вас, встаёт к нему в очередь', you: 'Вы', queue: (n) => `${n} ${ruN(n, 'ждёт', 'ждут', 'ждут')} вас`, myLook: 'Моя внешность',
+    human: 'Ваш стол: кто ждёт вас, встаёт к нему в очередь', you: 'Вы — Босс', queue: (n) => `${n} ${ruN(n, 'ждёт', 'ждут', 'ждут')} вас`, myLook: 'Моя внешность',
     language: 'Язык', languageAuto: 'Русский (по умолчанию)',
     reply: 'Ответить', replyTitle: (n) => `${n} ждёт вас`, close: 'Закрыть', anim: 'Анимация офиса', cardsToggle: 'Карточки сотрудников', viewNote: 'Без анимации карточки показывают каждого за его столом.',
     looksName: 'Внешность и имя', lastFail: (a) => `Последний запуск упал · ${a}`, alias: 'Имя на экране', aliasHint: 'Это имя видно только здесь.',
