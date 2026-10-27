@@ -1,7 +1,7 @@
 // Демо-прогон для экрана: офис.html?src=demo-events.js проигрывает эти события по одному в 0,7 с.
 // Формат — как пишет хук Claude Code (строка ev({...}); на событие). Компании и сайты вымышленные.
 ev({"session_id": "demo-1", "hook_event_name": "UserPromptSubmit", "prompt": "Найди 3 партнёра в Чехии."});
-ev({"session_id": "demo-1", "hook_event_name": "PreToolUse", "tool_name": "Read", "tool_input": {"file_path": "C:\\office\\роли\\босс.md"}});
+ev({"session_id": "demo-1", "hook_event_name": "PreToolUse", "tool_name": "Read", "tool_input": {"file_path": "C:\\office\\роли\\управляющий.md"}});
 ev({"session_id": "demo-1", "hook_event_name": "PreToolUse", "tool_name": "Read", "tool_input": {"file_path": "C:\\office\\каталог.md"}});
 ev({"session_id": "demo-1", "hook_event_name": "PreToolUse", "tool_name": "Agent", "tool_input": {"description": "Скаут: 6 кандидатов в Чехии", "prompt": "Найди 6 кандидатов по «Кого ищем», 3 — новый, остальные — запас. Верни 3 строки по ПРАВИЛАМ.", "subagent_type": "scout"}});
 ev({"session_id": "demo-1", "agent_id": "d-scout-1", "agent_type": "scout", "hook_event_name": "SubagentStart"});

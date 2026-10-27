@@ -303,11 +303,10 @@
       return;
     }
     if (kind === 'PostToolUse') { trackLeads(e, who, at); return; }
-    // Запрос разрешения (Claude Code и Codex: PermissionRequest; Claude Code ещё и Notification) —
-    // человечек ждёт вашего «Разрешить», а не печатает
-    if (kind === 'PermissionRequest' || kind === 'Notification') {
-      const m = kind === 'PermissionRequest' ? String(e.tool_name || '') : String(e.message || '');
-      if (kind === 'Notification' && e.notification_type !== 'permission_prompt' && !/permission|разрешени/i.test(m)) return;
+    // Запрос разрешения (Claude Code и Codex) — человечек ждёт вашего «Разрешить», а не печатает
+    if (kind === 'PermissionRequest') {
+      if (who.status === 'waiting') return;
+      const m = String(e.tool_name || '');
       who.status = 'waiting'; who.waitText = '⏳ ждёт «Разрешить»' + (m ? ' — ' + short(m, 80) : '');
       step(who, '⏳ ждёт вашего «Разрешить»', at);
       flow(at, who.name, 'Вы', 'ждёт «Разрешить»');
