@@ -595,7 +595,7 @@
       const bg = e.source !== 'agent' && ((e.background_tasks || []).some((t) => t && t.status === 'running') || runningSubs() > 0);
       if (bg) { B.status = 'running'; step(B, '⏳ ждёт сотрудников', at); }   // сидит за столом и ждёт отчётов
       else {
-        B.status = 'waiting'; B.waitText = '';
+        B.status = 'waiting'; B.waitText = ''; B.permAt = 0;
         S.waitText = short(String(e.last_assistant_message || '').split(/\r?\n/).find((l) => l.trim()) || '', 140);
         step(B, '🙋 ждёт вас', at);
         flow(at, 'Управляющий', 'Вы', 'ждёт вашего решения' + (S.waitText ? ' — ' + S.waitText : ''));
@@ -621,14 +621,14 @@
     if (kind === 'PermissionRequest') {
       if (who.status === 'waiting') return;
       const m = String(e.tool_name || '');
-      who.status = 'waiting'; who.waitText = '⏳ ждёт «Разрешить»' + (m ? ' — ' + short(m, 80) : '');
+      who.status = 'waiting'; who.waitText = '⏳ ждёт «Разрешить»' + (m ? ' — ' + short(m, 80) : ''); who.permAt = at;
       step(who, '⏳ ждёт вашего «Разрешить»', at);
       flow(at, who.name, 'Вы', 'ждёт «Разрешить»');
       return;
     }
     if (!e.tool_name) return;
     const n = String(e.tool_name).toLowerCase(), i = e.tool_input || {};
-    who.status = 'running'; who.waitText = '';
+    who.status = 'running'; who.waitText = ''; who.permAt = 0;
     if (who === B) S.waitText = '';
     if (/^(agent|task)$/.test(n) || /spawn_agent/.test(n)) {
       const t0 = i.subagent_type || i.agent_type || i.role;
@@ -646,8 +646,10 @@
   }
 
   function out(a) {
-    const t = a.status === 'waiting' ? (a.waitText || S.waitText || 'ждёт вашего решения') : a.task;
-    return { id: a.id, name: a.name, role: titleOf(a.role), status: a.status, since: a.since,
+    // Codex «Подтверждать за меня» решает запрос сам за секунды — руку поднимаем, только если ждут дольше 8 с
+    const st = a.status === 'waiting' && a.permAt && Date.now() - a.permAt < 8000 ? 'running' : a.status;
+    const t = st === 'waiting' ? (a.waitText || S.waitText || 'ждёт вашего решения') : a.task;
+    return { id: a.id, name: a.name, role: titleOf(a.role), status: st, since: a.since,
       task: t || a.step ? { title: t || '', step: a.status === 'running' ? a.step : '' } : null,
       parent: a.parent, recent: a.recent.slice(), completedAt: a.completedAt, assignedAt: a.assignedAt, returnedAt: a.returnedAt };
   }
