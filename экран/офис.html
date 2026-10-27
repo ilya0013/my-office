@@ -361,9 +361,9 @@
   const BASE_COLUMNS = ['запас', 'новый', 'не подходит', 'письмо готово', 'проверено', 'одобрено', 'отправлено', 'ответ', 'встреча', 'отказ'];
   // колонки конвейера: известные статусы и встреченные в файлах новые (перед «одобрено»)
   const cols = () => { const k = BASE_COLUMNS.indexOf('одобрено'); return [...BASE_COLUMNS.slice(0, k), ...S.extra, ...BASE_COLUMNS.slice(k)]; };
-  const NAMES = { boss: 'Босс', scout: 'Разведчик', manager: 'Менеджер', checker: 'Проверяющий', worker: 'Сотрудник' };
-  const TITLES = { boss: 'руководитель', scout: 'ищет кандидатов', manager: 'ведёт компанию', checker: 'проверяет письма', worker: 'помощник' };
-  const COLORS = { 'Вы': '#ffffff', 'Босс': '#ffd75e', 'Разведчик': '#6fcf97', 'Проверяющий': '#9ec5ff', 'Менеджер': '#f0a35e', 'Сотрудник': '#c9cbe0' };
+  const NAMES = { boss: 'Управляющий', scout: 'Скаут', manager: 'Аналитик', checker: 'Проверяющий', worker: 'Помощник Управляющего' };
+  const TITLES = { boss: 'руководитель', scout: 'ищет кандидатов', manager: 'ведёт компанию', checker: 'проверяет письма', worker: 'служебное задание' };
+  const COLORS = { 'Вы': '#ffffff', 'Управляющий': '#ffd75e', 'Скаут': '#6fcf97', 'Проверяющий': '#9ec5ff', 'Аналитик': '#f0a35e', 'Помощник Управляющего': '#c9cbe0' };
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const short = (s, n = 60) => { s = String(s || '').replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
   const baseName = (n) => String(n || '').replace(/ \d+$/, '');
@@ -377,7 +377,7 @@
     return { id, role, name, status: 'idle', task: '', step: '', recent: [], parent: null, since, completedAt: null, assignedAt: null, returnedAt: null };
   }
   function reset() {
-    S = { boss: mk('boss', 'boss', 'Босс', 0), slots: [], byAgent: new Map(), bySession: new Map(), bossSession: '',
+    S = { boss: mk('boss', 'boss', 'Управляющий', 0), slots: [], byAgent: new Map(), bySession: new Map(), bossSession: '',
       pending: [], leads: {}, flow: [], extra: [], written: new Set(), maxPar: 0, acts: {}, waitText: '', seq: 1 };
     applied = 0;
   }
@@ -388,7 +388,8 @@
     t = String(t || '').toLowerCase().trim();
     if (/scout|развед/.test(t)) return 'scout';
     if (/check|провер/.test(t)) return 'checker';
-    if (/manag|менедж/.test(t)) return 'manager';
+    if (/analyst|аналит|manag|менедж/.test(t)) return 'manager';
+    if (/^(general-purpose|explore|plan|claude-code-guide|statusline-setup|default|worker|explorer)$/.test(t)) return 'worker';
     const k = t.replace(/[^\wа-яё-]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 24);
     return guess || !k ? 'worker' : 'w-' + k;
   }
@@ -431,7 +432,7 @@
     if (/каталог\.md$/.test(p)) return 'каталог';
     if (/ПРАВИЛА\.md$/i.test(p)) return 'правила';
     if (/роли\//.test(p)) return 'свою инструкцию';
-    if (/входящие\.md$/.test(p)) return 'входящие';
+    if (/ваш-ход\.md$/.test(p)) return '«Ваш ход»';
     if (/(^|\/)_шаблон/.test(p)) return 'шаблон досье';
     if (/SKILL\.md$/i.test(p)) return 'инструкцию инструмента';
     return short(p.split('/').pop() || 'файл', 40);
@@ -545,7 +546,7 @@
     step(a, '📥 получил задание', at);
     if (e.agent_id) S.byAgent.set(e.agent_id, a);
     if (e.session_id && S.bossSession && e.session_id !== S.bossSession) S.bySession.set(e.session_id, a);
-    flow(at, 'Босс', a.name, a.task || 'новое задание');
+    flow(at, 'Управляющий', a.name, a.task || 'новое задание');
     S.maxPar = Math.max(S.maxPar, runningSubs());
     return a;
   }
@@ -554,7 +555,7 @@
     a.status = 'idle'; a.completedAt = a.returnedAt = at;
     step(a, '✅ сдал работу', at);
     const m = String(e.last_assistant_message || '').match(/Главное:\s*([^\r\n]+)/);
-    flow(at, a.name, 'Босс', 'сдал работу' + (m ? ' — ' + short(m[1], 90) : ''));
+    flow(at, a.name, 'Управляющий', 'сдал работу' + (m ? ' — ' + short(m[1], 90) : ''));
   }
   function actor(e, kind) {
     if (e.agent_id) return S.byAgent.get(e.agent_id) || (kind === 'SubagentStart' ? null : startSlot(e, Date.now()));
@@ -565,7 +566,7 @@
       let a = S.bySession.get(sid);
       if (!a) { a = [...S.slots].reverse().find((x) => x.status === 'running' && ![...S.bySession.values()].includes(x)); if (a) S.bySession.set(sid, a); }
       if (a) return a;
-      // никто из сотрудников не работает — это новая сессия самого Босса (владелец открыл новый чат)
+      // никто из сотрудников не работает — это новая сессия самого Управляющего (владелец открыл новый чат)
       S.bossSession = sid;
     }
     return S.boss;
@@ -579,7 +580,7 @@
       if (known && known.status !== 'running') S.byAgent.delete(e.agent_id);   // тот же id получил новое задание
       const a = known && known.status === 'running' ? known : startSlot(e, at);
       if (e.source === 'agent') {
-        // Codex: Босс сам пишет, кого отправил, — значит, он за столом и раздаёт работу
+        // Codex: Управляющий сам пишет, кого отправил, — значит, он за столом и раздаёт работу
         S.boss.status = 'running'; S.waitText = '';
         step(S.boss, '📨 → ' + baseName(a.name), at);
       }
@@ -590,14 +591,14 @@
     if (kind === 'Stop') {
       if (who !== B) { stopSlot(who, e, at); return; }
       B.completedAt = at;
-      // source:"agent" — Босс сам сообщил, что ждёт владельца
+      // source:"agent" — Управляющий сам сообщил, что ждёт владельца
       const bg = e.source !== 'agent' && ((e.background_tasks || []).some((t) => t && t.status === 'running') || runningSubs() > 0);
       if (bg) { B.status = 'running'; step(B, '⏳ ждёт сотрудников', at); }   // сидит за столом и ждёт отчётов
       else {
         B.status = 'waiting';
         S.waitText = short(String(e.last_assistant_message || '').split(/\r?\n/).find((l) => l.trim()) || '', 140);
         step(B, '🙋 ждёт вас', at);
-        flow(at, 'Босс', 'Вы', 'ждёт вашего решения' + (S.waitText ? ' — ' + S.waitText : ''));
+        flow(at, 'Управляющий', 'Вы', 'ждёт вашего решения' + (S.waitText ? ' — ' + S.waitText : ''));
       }
       return;
     }
@@ -612,7 +613,7 @@
       }
       B.status = 'running'; S.waitText = '';
       if (/^\s*<task-notification>/.test(p)) step(B, '📬 читает отчёт', at);
-      else { B.task = short(p, 80); step(B, '💬 задание от вас', at); flow(at, 'Вы', 'Босс', short(p, 90)); }
+      else { B.task = short(p, 80); step(B, '💬 задание от вас', at); flow(at, 'Вы', 'Управляющий', short(p, 90)); }
       return;
     }
     if (kind === 'PostToolUse') { trackLeads(e, who, at); return; }
@@ -673,7 +674,7 @@
     }
     if (all.length && !t0) t0 = Date.now();
     const limit = PLAY ? Math.min(all.length, Math.floor((Date.now() - t0) / STEP_MS) + 1) : all.length;
-    // Codex: Босс и сотрудники сами дописывают события с source:"agent". Если в файле есть настоящие события
+    // Codex: Управляющий и сотрудники сами дописывают события с source:"agent". Если в файле есть настоящие события
     // хуков той же сессии (или у агентского события нет сессии), агентские пропускаем — иначе всё вдвойне.
     const realS = new Set(all.filter((x) => x.e.source !== 'agent').map((x) => x.e.session_id || ''));
     const dup = (e) => e.source === 'agent' && realS.size > 0 && (!e.session_id || realS.has(e.session_id));
@@ -714,7 +715,7 @@
     'письмо готово': ['письмо на проверке', ''], 'отправлено': ['отправлено', 'good'], 'ответ': ['пришёл ответ', 'good'],
     'встреча': ['встреча', 'good'], 'запас': ['в запасе', 'bad'], 'не подходит': ['не подошла', 'bad'], 'отказ': ['отказ', 'bad'] };
   const ORDER = Object.keys(STAGE);
-  // «неизвестно» от Разведчика — пустая клетка: так таблица читается легче
+  // «неизвестно» от Скаута — пустая клетка: так таблица читается легче
   const info = (slug) => Object.fromEntries(Object.entries((D && D[slug]) || {}).map(([k, v]) => [k, /^неизвестн/i.test(String(v).trim()) ? '' : v]));
   // проба мастера настройки: видна в «Базе», но не ждёт вашего «одобряю»
   const probe = (slug) => /^да/i.test(String((D && D[slug] && D[slug]['проба']) || ''));
@@ -730,8 +731,8 @@
     const list = rows();
     const n = list.length, wait = waiting();
     set('mo-base-n', n ? `<b>${n}</b>` : '');
-    set('mo-base-sum', n ? `Компаний: ${n}` + (wait ? ` · ждут вашего «одобряю»: ${wait} — ответьте Боссу в чате` : '') : '');
-    if (!n) return set('mo-base-table', '<div class="mute">Компаний пока нет. Напишите Боссу в чате: «найди 5 компаний».</div>');
+    set('mo-base-sum', n ? `Компаний: ${n}` + (wait ? ` · ждут вашего «одобряю»: ${wait} — ответьте Управляющему в чате` : '') : '');
+    if (!n) return set('mo-base-table', '<div class="mute">Компаний пока нет. Напишите Управляющему в чате: «найди 5 компаний».</div>');
     const body = list.map(([slug, l, d]) => {
       const [stage, own] = STAGE[l.status] || [l.status, ''];
       const cls = probe(slug) && own === 'you' ? '' : own;
@@ -757,8 +758,8 @@
     // строка статуса: решения — в чате, здесь только что происходит
     const working = S.slots.filter((a) => a.status === 'running').length;
     const wait = waiting();
-    const st = S.boss.status === 'waiting' ? 'Босс ждёт вас в чате' + (wait ? ` · писем ждут «одобряю»: ${wait}` : '')
-      : working ? `Офис работает — сотрудников за делом: ${working}` : S.boss.status === 'running' ? 'Офис работает' : !all.length ? '' : 'Тихо — напишите Боссу, что сделать';   // событий нет — говорит плашка над офисом
+    const st = S.boss.status === 'waiting' ? 'Управляющий ждёт вас в чате' + (wait ? ` · писем ждут «одобряю»: ${wait}` : '')
+      : working ? `Офис работает — сотрудников за делом: ${working}` : S.boss.status === 'running' ? 'Офис работает' : !all.length ? '' : 'Тихо — напишите Управляющему, что сделать';   // событий нет — говорит плашка над офисом
     set('mo-status', st + (wait && S.boss.status !== 'waiting' ? ` · писем ждут вашего «одобряю»: ${wait}` : ''));
     const el = document.getElementById('mo-status'); if (el) el.classList.toggle('you', S.boss.status === 'waiting');
     renderBase();
@@ -988,7 +989,7 @@
   const ruN = (n, one, few, many) => { const a = Math.abs(n) % 100, b = a % 10; return a > 10 && a < 20 ? many : b === 1 ? one : b >= 2 && b <= 4 ? few : many; };
   STR.ru = { ...STR.en,
     connecting: 'Подключаюсь…', feedUnreachable: 'Не могу прочитать события, пробую ещё…',
-    empty: 'Жду первого события — напишите Боссу. Написали, а здесь пусто? В Codex наберите /hooks и разрешите хуки офиса.', emptyClaude: 'Жду первого события — напишите Боссу.', noCompany: 'Пока никого.',
+    empty: 'Жду первого события — напишите Управляющему. Написали, а здесь пусто? В Codex наберите /hooks и разрешите хуки офиса.', emptyClaude: 'Жду первого события — напишите Управляющему.', noCompany: 'Пока никого.',
     summary: (n, r) => `${n} ${ruN(n, 'сотрудник', 'сотрудника', 'сотрудников')} · ${r} ${ruN(r, 'работает', 'работают', 'работают')}`,
     running: 'работает', idle: 'свободен', error: 'ошибка', paused: 'на паузе', waiting: 'ждёт вас', noTask: 'без задания',
     done: '✓ готово', errBubble: '⚠ ошибка', waitBubble: '✋ ждёт вас',
@@ -1035,7 +1036,7 @@
     needsYouTitle: (n) => `${n} ждёт вас`, lastSteps: 'Последние шаги',
     pairs: [['Ответили на письмо?', 'Пока нет, но открыли дважды.'], ['Кофе или чай?', 'Что угодно, лишь бы отзывы читались.'],
       ['Видел отзыв про кресло?', 'Пять звёзд за кресло, одна за запись по телефону.'], ['Много сегодня компаний?', 'Три разобрал, одна не подошла.'],
-      ['Кто съел последнее печенье?', 'Разведчик. Он везде первый.'], ['Как письмо?', 'Короткое. Босс любит короткие.'],
+      ['Кто съел последнее печенье?', 'Скаут. Он везде первый.'], ['Как письмо?', 'Короткое. Управляющий любит короткие.'],
       ['Клиент перезвонил?', 'Пишет, что подумает до пятницы.'], ['Опять сайт без цен?', 'Зато с тремя фото фасада.']],
     chatter: ['☕', 'перерыв на кофе', '…', 'хм', 'что дальше?', 'ещё одно письмо', 'где мой кофе?'],
     hint: 'Кто работает — сидит за столом и печатает; свободные отдыхают в лаунже. Обновляется каждые 2 с.',
@@ -2350,7 +2351,7 @@
         if (synced && parent) sendEnvelope(parent, s, '#dff1ff');
       }
       s.recent = a.recent || null;
-      // Мой офис: тот же сотрудник получил новое задание — конверт к нему; сдал работу — конверт Боссу
+      // Мой офис: тот же сотрудник получил новое задание — конверт к нему; сдал работу — конверт Управляющему
       const par = a.parent && sprites.get(a.parent);
       if (synced && par && a.assignedAt && s.assignedAt !== undefined && s.assignedAt !== a.assignedAt) sendEnvelope(par, s, '#dff1ff');
       if (synced && par && a.returnedAt && s.returnedAt !== undefined && s.returnedAt !== a.returnedAt) sendEnvelope(s, par, '#fff3c4');

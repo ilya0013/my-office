@@ -124,7 +124,7 @@ rep("if (!agents.length && providers.some((p) => p.kind === 'feed')) {",
     "if ((!agents.length || (window.MO && window.MO.empty())) && providers.some((p) => p.kind === 'feed')) {")
 rep('''      s.recent = a.recent || null;
 ''', '''      s.recent = a.recent || null;
-      // Мой офис: тот же сотрудник получил новое задание — конверт к нему; сдал работу — конверт Боссу
+      // Мой офис: тот же сотрудник получил новое задание — конверт к нему; сдал работу — конверт Управляющему
       const par = a.parent && sprites.get(a.parent);
       if (synced && par && a.assignedAt && s.assignedAt !== undefined && s.assignedAt !== a.assignedAt) sendEnvelope(par, s, '#dff1ff');
       if (synced && par && a.returnedAt && s.returnedAt !== undefined && s.returnedAt !== a.returnedAt) sendEnvelope(s, par, '#fff3c4');

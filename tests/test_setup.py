@@ -22,19 +22,19 @@ class Settings(unittest.TestCase):
             self.assertIn(section, text("каталог.md"))
 
     def test_roles_read_settings_from_catalog(self):
-        self.assertIn(LETTER[3:], text("роли/менеджер.md"))
+        self.assertIn(LETTER[3:], text("роли/аналитик.md"))
         self.assertIn(CHECK[3:], text("роли/проверяющий.md"))
 
     def test_setup_mode(self):
-        boss, doc = text("роли/босс.md"), text("docs/настройка.md")
+        boss, doc = text("роли/управляющий.md"), text("docs/настройка.md")
         for must in ("## Настройка", "docs/настройка.md", "Статус: настраивается", "Запомнил"):
             self.assertIn(must, boss)
         for must in ("настройка/было/", "проба: да", "верни как было", "Оставить пример", "Где ищем:"):
             self.assertIn(must, doc)
 
     def test_team_mode(self):
-        # подробности «Команды» — в доке, Босс читает их только по просьбе: его роль не раздувается
-        boss, doc = text("роли/босс.md"), text("docs/перестроить-офис.md")
+        # подробности «Команды» — в доке, Управляющий читает их только по просьбе: его роль не раздувается
+        boss, doc = text("роли/управляющий.md"), text("docs/перестроить-офис.md")
         self.assertIn("## Команда", boss)
         self.assertIn("docs/перестроить-офис.md", boss)
         self.assertLess(len(boss.splitlines()), 240)

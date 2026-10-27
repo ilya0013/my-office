@@ -27,7 +27,7 @@ class Snapshot(unittest.TestCase):
         (office / "лиды").mkdir()
         shutil.copy(ROOT / "лиды" / "_шаблон.md", office / "лиды" / "_шаблон.md")
         self.py("scripts/build_agents.py")
-        # образец роли сотрудника — любая роль с шапкой (после перестройки менеджера может не быть)
+        # образец роли сотрудника — любая роль с шапкой (после перестройки аналитика может не быть)
         self.sample = next(text(p) for p in sorted((office / "роли").glob("[!_]*.md")) if text(p).startswith("---"))
 
     def tearDown(self):
