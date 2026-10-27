@@ -755,8 +755,8 @@
         + `<td>${hasLetter ? `<button type="button" class="mo-btn" data-letter="${esc(slug)}">${opened[slug] ? 'скрыть' : 'читать'}</button>` : ''}</td></tr>`;
       if (opened[slug]) {
         const mail = mailOf(d);
-        // письмо одобрено (или уже отмечено «отправил») — его можно открыть в почте компьютера
-        const send = (l.status === 'одобрено' || l.status === 'отправлено') && mail ? ` <a class="mo-btn pri" href="${esc(`mailto:${mail}?subject=${encodeURIComponent(d['тема'] || '')}&body=${encodeURIComponent(plain(d['письмо']))}`)}">✉ открыть в почте</a>` : '';
+        // только одобренное и ещё не отправленное: кнопка открывает новое письмо, а не то, что ушло
+        const send = l.status === 'одобрено' && mail ? ` <a class="mo-btn pri" href="${esc(`mailto:${mail}?subject=${encodeURIComponent(d['тема'] || '')}&body=${encodeURIComponent(plain(d['письмо']))}`)}">✉ открыть в почте</a>` : '';
         // «копировать» стоит у того, что копирует: у темы и в заголовке письма
         const cp = (kind, what) => `<button type="button" class="mo-copy" data-copy="${kind}:${esc(slug)}" title="Скопировать ${what}">⧉ копировать</button>`;
         h += `<tr class="letter"><td colspan="7">${d['тема'] ? `<div class="mute">Тема: ${esc(d['тема'])}${cp('тема', 'тему')}${send}</div>` : send ? `<div>${send}</div>` : ''}`
