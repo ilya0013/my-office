@@ -1,19 +1,30 @@
 <style>
-  /* Мой офис: две вкладки в одном окне. «Офис» — пиксельный офис, статусы — пузыри над человечками.
+  /* Мой офис: три вкладки в одном окне. «Офис» — пиксельный офис, статусы — пузыри над человечками.
+     «Ваш ход» — что ждёт владельца: письма на «одобряю», одобренные к отправке, не подошедшие.
      «База» — все компании таблицей, как в Excel: стадия, сайт, почему, контакт, письмо с переводом.
      Решения владелец принимает в чате, экран только показывает */
   /* офис целиком в окне и не шире 860 px (крупнее — громоздко); ширину считает fitLayout по настоящим
      пропорциям комнаты — при третьем ряде столов она выше */
   body:not(.kiosk) #stage { width:min(100%, var(--mo-stage-w, 860px)); margin:0 auto; }
-  body:not([data-moview="base"]) .wrap { max-width:calc(var(--mo-stage-w, 860px) + 32px) !important; margin:0 auto; }   /* шапка и вкладки — по краю офиса */
-  body[data-moview="base"] .wrap { max-width:none !important; }   /* таблице — вся ширина */
+  body:not([data-moview="base"]):not([data-moview="you"]) .wrap { max-width:calc(var(--mo-stage-w, 860px) + 32px) !important; margin:0 auto; }   /* шапка и вкладки — по краю офиса */
+  body[data-moview="base"] .wrap, body[data-moview="you"] .wrap { max-width:none !important; }   /* таблице — вся ширина */
   #mo-view { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:0 0 8px; }
   #mo-view button { background:none; border:1px solid var(--line); color:var(--muted); border-radius:6px; padding:5px 14px; font:inherit; font-size:13.5px; cursor:pointer; }
   #mo-view button[aria-selected="true"] { background:var(--panel); color:var(--text); border-color:#4a4f6b; }
   #mo-view button b { font-weight:600; margin-inline-start:5px; }
   #mo-status { font-size:13px; color:var(--muted); margin-inline-start:6px; overflow-wrap:anywhere; }
   #mo-status.you { color:#ffe08a; }
-  body[data-moview="base"] #mo-left, body:not([data-moview="base"]) #mo { display:none; }
+  body[data-moview="base"] #mo-left, body[data-moview="you"] #mo-left, body:not([data-moview="base"]):not([data-moview="you"]) #mo { display:none; }
+  body[data-moview="you"] #mo-csv { display:none; }
+  .mo-you { max-width:760px; font-size:13.5px; line-height:1.5; }
+  .mo-you h4 { margin:14px 0 4px; font-size:13.5px; }
+  .mo-you ul { margin:0; padding-left:18px; }
+  .mo-you li { margin:4px 0; }
+  .mo-you .now { background:#4a3d12; border:1px solid #8a7020; color:#ffe08a; border-radius:6px; padding:8px 10px; }
+  .mo-you code { background:#33374d; border-radius:4px; padding:0 5px; }
+  .mo-files { margin-top:18px; padding-top:10px; border-top:1px dashed var(--line); color:var(--muted); }
+  .mo-files summary { cursor:pointer; font-size:13px; }
+  .mo-files ul { margin-top:6px; }
   footer, #cards { display:none; }   /* подсказка Cubicle и список команды не нужны: всё видно в офисе */
   .mo-p { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:8px 10px; min-width:0; }
   #mo .mute { color:var(--muted); }
@@ -442,7 +453,7 @@
       if (opened[slug]) {
         const mail = mailOf(d);
         // только одобренное и ещё не отправленное: кнопка открывает новое письмо, а не то, что ушло
-        const send = l.status === 'одобрено' && mail ? ` <a class="mo-btn pri" href="${esc(`mailto:${mail}?subject=${encodeURIComponent(d['тема'] || '')}&body=${encodeURIComponent(plain(d['письмо']))}`)}">✉ открыть в почте</a>` : '';
+        const send = l.status === 'одобрено' && mail ? ` <a class="mo-btn pri" data-mail="${esc(slug)}" href="${esc(`mailto:${mail}?subject=${encodeURIComponent(d['тема'] || '')}&body=${encodeURIComponent(plain(d['письмо']))}`)}">✉ открыть в почте</a>` : '';
         // «копировать» стоит у того, что копирует: у темы и в заголовке письма
         const cp = (kind, what) => `<button type="button" class="mo-copy" data-copy="${kind}:${esc(slug)}" title="Скопировать ${what}">⧉ копировать</button>`;
         h += `<tr class="letter"><td colspan="7">${d['тема'] ? `<div class="mute">Тема: ${esc(d['тема'])}${cp('тема', 'тему')}${send}</div>` : send ? `<div>${send}</div>` : ''}`
@@ -456,6 +467,39 @@
     set('mo-base-table', '<div class="mo-tbl-wrap"><table class="mo-tbl"><thead><tr><th>Компания</th><th>Город</th><th>Сайт</th><th>Стадия</th><th>Почему подходит</th><th>Контакт</th><th>Письмо</th></tr></thead>'
       + `<tbody>${body}</tbody></table></div>` + (PLAY ? '<div class="mute" style="margin-top:6px">В демо писем и подробностей нет — в вашем офисе здесь будут письма с переводом.</div>' : ''));
   }
+  // «Ваш ход» — из тех же статусов и решения.js, что «База»; проба сюда не попадает
+  function renderYou() {
+    const list = rows().filter(([slug]) => !probe(slug));
+    const of = (...st) => list.filter(([, l]) => st.includes(l.status));
+    const wait = of('проверено'), ok = of('одобрено'), sent = of('отправлено', 'ответ', 'встреча'), no = of('не подходит', 'отказ'), work = of('новый', 'письмо готово');
+    const read = (slug) => (!PLAY && D && D[slug] && D[slug]['письмо'] ? ` <button type="button" class="mo-btn" data-open="${esc(slug)}">читать</button>` : '');
+    const li = ([slug, l], extra) => `<li><b>${esc(l.title)}</b> <code>${esc(slug)}</code>${extra || ''}${read(slug)}</li>`;
+    const names = (x) => x.map(([, l]) => esc(l.title)).join(', ');
+    set('mo-base-sum', 'Что ждёт вас. Решения — в чате, Управляющему.');
+    if (!list.length) return set('mo-base-table', '<div class="mo-you"><div class="now">Пока ничего. Напишите Управляющему в чате: «найди 1 компанию» — сюда придут письма на одобрение.</div>' + files() + '</div>');
+    const now = !wait.length && !ok.length && S.boss.status === 'waiting' ? 'Управляющий ждёт вашего ответа в чате — посмотрите его вопрос.'
+      : wait.length ? 'Прочитайте письма ниже и ответьте Управляющему в чате: «одобряю все», «одобряю <имя>» или «поправь <имя>: что изменить». Имя — серым после компании.'
+      : ok.length ? 'Отправьте одобренные письма со своей почты («читать» → «открыть в почте» или «копировать») и напишите Управляющему «отправил <имя>».'
+      : work.length ? 'Пока ничего — офис работает.' : 'Пока ничего. Новая партия — «найди ещё 3».';
+    let h = `<div class="mo-you"><div class="now">${esc(now)}</div>`;
+    if (wait.length) h += `<h4>Письма проверены — ждут вашего «одобряю»</h4><ul>${wait.map((x) => li(x, x[2]['почему'] ? ' — ' + esc(x[2]['почему']) : '')).join('')}</ul>`;
+    if (ok.length) h += `<h4>Одобрены — отправьте сами со своей почты</h4><ul>${ok.map((x) => li(x, mailOf(x[2]) ? ', кому: ' + esc(mailOf(x[2])) : '')).join('')}</ul>`;
+    if (work.length) h += `<h4>В работе</h4><ul><li>${names(work)}</li></ul>`;
+    if (sent.length) h += `<h4>Отправлены</h4><ul><li>${names(sent)}</li></ul>`;
+    if (no.length) h += `<h4>Не подошли</h4><ul><li>${names(no)} — почему, спросите Управляющего: «почему <имя>?»</li></ul>`;
+    set('mo-base-table', h + files() + '</div>');
+  }
+  // Файлы офиса — открыть и посмотреть, как он устроен (.md откроется текстом); свёрнуто, раскрытие помнится
+  let filesOpen = false;
+  document.addEventListener('toggle', (e) => { if (e.target.classList && e.target.classList.contains('mo-files')) filesOpen = e.target.open; }, true);
+  const files = () => (PLAY ? '' : `<details class="mo-files"${filesOpen ? ' open' : ''}><summary>Файлы офиса — посмотреть, как он устроен</summary>` + FILES + '</details>');
+  const FILES = '<ul>' + [
+    ['каталог.md', 'настройки: кто вы, где ищем, что предлагаем, каким должно быть письмо, что проверять'],
+    ['ПРАВИЛА.md', 'чего нельзя никому: нет ссылки — нет факта, не додумывать, наружу — только вы'],
+    ['роли/управляющий.md', 'инструкция Управляющего'], ['роли/скаут.md', 'Скаута'], ['роли/аналитик.md', 'Аналитика'], ['роли/проверяющий.md', 'Проверяющего'],
+    ['ваш-ход.md', 'что ждёт вас — то же, что эта вкладка, файлом'],
+  ].map(([f, t]) => `<li><a href="../${esc(encodeURI(f))}" target="_blank" rel="noopener">${esc(f)}</a> — ${esc(t)}</li>`).join('')
+    + '<li class="mute">досье компаний — в папке лиды/, письма — в письма/; оттуда их читают сотрудники</li></ul>';
   function render() {
     if (!document.getElementById('mo')) return;
     // строка статуса: решения — в чате, здесь только что происходит
@@ -465,7 +509,9 @@
       : working ? `Офис работает — сотрудников за делом: ${working}` : S.boss.status === 'running' ? 'Офис работает' : !all.length ? '' : 'Тихо — напишите Управляющему, что сделать';   // событий нет — говорит плашка над офисом
     set('mo-status', st + (wait && S.boss.status !== 'waiting' ? ` · писем ждут вашего «одобряю»: ${wait}` : ''));
     const el = document.getElementById('mo-status'); if (el) el.classList.toggle('you', S.boss.status === 'waiting');
-    renderBase();
+    const you = Object.entries(S.leads).filter(([slug, l]) => (l.status === 'проверено' || l.status === 'одобрено') && !probe(slug)).length;
+    set('mo-you-n', you ? `<b>${you}</b>` : '');
+    if (view === 'you') { renderYou(); const n = Object.keys(S.leads).length; set('mo-base-n', n ? `<b>${n}</b>` : ''); } else renderBase();   // счётчик «Базы» — и на вкладке «Ваш ход»
   }
 
   // Данные «Базы» (город, сайт, почему, контакт, письмо) — решения.js, хук переписывает его в конце хода
@@ -480,8 +526,8 @@
     el.onload = el.onerror = () => { el.remove(); decLoading = false; render(); };
     document.head.appendChild(el);
   }
-  // Markdown письма → текст: ссылка — её текст, заголовок — жирным
-  const md = (s) => esc(String(s || '').trim()).replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/^#+\s*(.+)$/gm, '<b>$1</b>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+  // Markdown письма → текст: ссылка на сайт кликабельна (по ней владелец проверяет письмо), прочие — текстом; заголовок — жирным
+  const md = (s) => esc(String(s || '').trim()).replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/^#+\s*(.+)$/gm, '<b>$1</b>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
   const plain = (s) => String(s || '').trim().replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)');
   // Скачать для Excel: .xlsx без библиотек (zip без сжатия) — одинаково открывается в Excel, Numbers и Google Таблицах
   const CRC = (() => { const t = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
@@ -523,28 +569,40 @@
   }
   function download(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
   // Копировать тему или письмо — вставить в любую почту без подключения
-  function copy(text, btn) {
-    const done = () => { const t0 = btn.textContent; btn.textContent = '✓ скопировано'; setTimeout(() => { btn.textContent = t0; }, 1500); };
-    const old = () => { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); done(); } catch (_) {} ta.remove(); };
+  function copy(text, btn, msg) {
+    const done = () => { const t0 = btn.textContent; btn.textContent = msg || '✓ скопировано'; setTimeout(() => { btn.textContent = t0; }, msg ? 8000 : 1500); };
+    const fail = () => { btn.textContent = 'Не скопировалось — выделите текст письма и скопируйте сами'; };
+    const old = () => { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (_) {} ta.remove(); ok ? done() : fail(); };
     try { navigator.clipboard.writeText(text).then(done, old); } catch (_) { old(); }
   }
   document.addEventListener('click', (e) => {
-    const t = e.target.closest && e.target.closest('[data-letter],[data-view],[data-copy],#mo-csv');
+    const t = e.target.closest && e.target.closest('[data-letter],[data-view],[data-copy],[data-open],[data-mail],#mo-csv');
     if (!t) return;
+    // встроенный браузер Claude Code не открывает почту (mailto): окно не потеряло фокус за 1,5 с —
+    // кнопка предлагает скопировать письмо; копируем только по нажатию, буфер сами не трогаем
+    if (t.dataset.mail) {
+      if (t.dataset.fallback) { e.preventDefault(); return copy(plain(((D && D[t.dataset.mail]) || {})['письмо']), t, '✓ письмо скопировано — вставьте в новое письмо, тему скопируйте слева'); }
+      let left = false; const away = () => { left = true; };
+      window.addEventListener('blur', away);
+      setTimeout(() => { window.removeEventListener('blur', away); if (!left && !document.hidden) { t.dataset.fallback = '1'; t.textContent = 'Почта не открылась? Нажмите — скопирую письмо'; } }, 1500);
+      return;
+    }
+    if (t.dataset.open) { opened[t.dataset.open] = true; return showView('base'); }   // «читать» во «Ваш ход» — письмо в «Базе»
     if (t.id === 'mo-csv') return xlsx();
     if (t.dataset.copy) { const [kind, slug] = t.dataset.copy.split(':'), d = (D && D[slug]) || {}; return copy(kind === 'тема' ? String(d['тема'] || '') : plain(d['письмо']), t); }
     if (t.dataset.view) return showView(t.dataset.view);
     opened[t.dataset.letter] = !opened[t.dataset.letter]; render();
   });
 
-  // Вкладки «Офис» и «База»; выбор помнится
+  // Вкладки «Офис», «Ваш ход» и «База»; выбор помнится
   let view = 'office';
-  try { if (localStorage.getItem('myoffice.view') === 'base') view = 'base'; } catch (_) {}
+  try { const v = localStorage.getItem('myoffice.view'); if (v === 'base' || v === 'you') view = v; } catch (_) {}
   function showView(v) {
     view = v; document.body.dataset.moview = v;
     document.querySelectorAll('#mo-view [data-view]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.view === v)));
     try { localStorage.setItem('myoffice.view', v); } catch (_) {}
     if (v === 'office') window.dispatchEvent(new Event('resize'));   // офис был скрыт — пересчитать размер
+    render();
   }
   let placed = false;
   function place() { if (placed) return; placed = true; showView(view); render(); }

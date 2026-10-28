@@ -29,9 +29,9 @@ rep('</style>\n</head>', '</style>\n' + adapter + '</head>')
 # 3. видимые надписи
 rep('<h1>Cubicle <small id="co"></small></h1>', '<h1>Мой офис <small id="co"></small></h1>')
 rep('<span><a href="https://github.com/caglarutkuguler/cubicle" target="_blank" rel="noopener">Cubicle</a> · MIT</span>', '<span>Мой офис</span>')
-# раскладка: две вкладки в одном окне — «Офис» (пиксельный офис) и «База» (все компании таблицей)
+# раскладка: три вкладки в одном окне — «Офис», «Ваш ход» (что ждёт владельца) и «База» (все компании таблицей)
 rep('''  <div id="main">
-  <div id="stage">''', '''  <nav id="mo-view"><button type="button" data-view="office">Офис</button><button type="button" data-view="base">База<span id="mo-base-n"></span></button><span id="mo-status"></span></nav>
+  <div id="stage">''', '''  <nav id="mo-view"><button type="button" data-view="office">Офис</button><button type="button" data-view="you">Ваш ход<span id="mo-you-n"></span></button><button type="button" data-view="base">База<span id="mo-base-n"></span></button><span id="mo-status"></span></nav>
   <div id="mo-layout">
   <div id="mo-left">
   <div id="main">
