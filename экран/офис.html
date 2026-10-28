@@ -825,7 +825,7 @@
     const el = document.getElementById('mo-status'); if (el) el.classList.toggle('you', S.boss.status === 'waiting');
     const you = Object.entries(S.leads).filter(([slug, l]) => (l.status === 'проверено' || l.status === 'одобрено') && !probe(slug)).length;
     set('mo-you-n', you ? `<b>${you}</b>` : '');
-    if (view === 'you') renderYou(); else renderBase();
+    if (view === 'you') { renderYou(); const n = Object.keys(S.leads).length; set('mo-base-n', n ? `<b>${n}</b>` : ''); } else renderBase();   // счётчик «Базы» — и на вкладке «Ваш ход»
   }
 
   // Данные «Базы» (город, сайт, почему, контакт, письмо) — решения.js, хук переписывает его в конце хода
