@@ -22,6 +22,9 @@
   .mo-you li { margin:4px 0; }
   .mo-you .now { background:#4a3d12; border:1px solid #8a7020; color:#ffe08a; border-radius:6px; padding:8px 10px; }
   .mo-you code { background:#33374d; border-radius:4px; padding:0 5px; }
+  .mo-files { margin-top:18px; padding-top:10px; border-top:1px dashed var(--line); color:var(--muted); }
+  .mo-files summary { cursor:pointer; font-size:13px; }
+  .mo-files ul { margin-top:6px; }
   footer, #cards { display:none; }   /* подсказка Cubicle и список команды не нужны: всё видно в офисе */
   .mo-p { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:8px 10px; min-width:0; }
   #mo .mute { color:var(--muted); }
@@ -450,7 +453,7 @@
       if (opened[slug]) {
         const mail = mailOf(d);
         // только одобренное и ещё не отправленное: кнопка открывает новое письмо, а не то, что ушло
-        const send = l.status === 'одобрено' && mail ? ` <a class="mo-btn pri" href="${esc(`mailto:${mail}?subject=${encodeURIComponent(d['тема'] || '')}&body=${encodeURIComponent(plain(d['письмо']))}`)}">✉ открыть в почте</a>` : '';
+        const send = l.status === 'одобрено' && mail ? ` <a class="mo-btn pri" data-mail="${esc(slug)}" href="${esc(`mailto:${mail}?subject=${encodeURIComponent(d['тема'] || '')}&body=${encodeURIComponent(plain(d['письмо']))}`)}">✉ открыть в почте</a>` : '';
         // «копировать» стоит у того, что копирует: у темы и в заголовке письма
         const cp = (kind, what) => `<button type="button" class="mo-copy" data-copy="${kind}:${esc(slug)}" title="Скопировать ${what}">⧉ копировать</button>`;
         h += `<tr class="letter"><td colspan="7">${d['тема'] ? `<div class="mute">Тема: ${esc(d['тема'])}${cp('тема', 'тему')}${send}</div>` : send ? `<div>${send}</div>` : ''}`
@@ -473,7 +476,7 @@
     const li = ([slug, l], extra) => `<li><b>${esc(l.title)}</b> <code>${esc(slug)}</code>${extra || ''}${read(slug)}</li>`;
     const names = (x) => x.map(([, l]) => esc(l.title)).join(', ');
     set('mo-base-sum', 'Что ждёт вас. Решения — в чате, Управляющему.');
-    if (!list.length) return set('mo-base-table', '<div class="mo-you"><div class="now">Пока ничего. Напишите Управляющему в чате: «найди 1 компанию» — сюда придут письма на одобрение.</div>' + FILES + '</div>');
+    if (!list.length) return set('mo-base-table', '<div class="mo-you"><div class="now">Пока ничего. Напишите Управляющему в чате: «найди 1 компанию» — сюда придут письма на одобрение.</div>' + files() + '</div>');
     const now = !wait.length && !ok.length && S.boss.status === 'waiting' ? 'Управляющий ждёт вашего ответа в чате — посмотрите его вопрос.'
       : wait.length ? 'Прочитайте письма ниже и ответьте Управляющему в чате: «одобряю все», «одобряю <имя>» или «поправь <имя>: что изменить». Имя — серым после компании.'
       : ok.length ? 'Отправьте одобренные письма со своей почты («читать» → «открыть в почте» или «копировать») и напишите Управляющему «отправил <имя>».'
@@ -484,10 +487,13 @@
     if (work.length) h += `<h4>В работе</h4><ul><li>${names(work)}</li></ul>`;
     if (sent.length) h += `<h4>Отправлены</h4><ul><li>${names(sent)}</li></ul>`;
     if (no.length) h += `<h4>Не подошли</h4><ul><li>${names(no)} — почему, спросите Управляющего: «почему <имя>?»</li></ul>`;
-    set('mo-base-table', h + FILES + '</div>');
+    set('mo-base-table', h + files() + '</div>');
   }
-  // Файлы офиса — открыть и посмотреть, как он устроен (.md откроется текстом)
-  const FILES = PLAY ? '' : '<h4>Файлы офиса — как он устроен</h4><ul>' + [
+  // Файлы офиса — открыть и посмотреть, как он устроен (.md откроется текстом); свёрнуто, раскрытие помнится
+  let filesOpen = false;
+  document.addEventListener('toggle', (e) => { if (e.target.classList && e.target.classList.contains('mo-files')) filesOpen = e.target.open; }, true);
+  const files = () => (PLAY ? '' : `<details class="mo-files"${filesOpen ? ' open' : ''}><summary>Файлы офиса — посмотреть, как он устроен</summary>` + FILES + '</details>');
+  const FILES = '<ul>' + [
     ['каталог.md', 'настройки: кто вы, где ищем, что предлагаем, каким должно быть письмо, что проверять'],
     ['ПРАВИЛА.md', 'чего нельзя никому: нет ссылки — нет факта, не додумывать, наружу — только вы'],
     ['роли/управляющий.md', 'инструкция Управляющего'], ['роли/скаут.md', 'Скаута'], ['роли/аналитик.md', 'Аналитика'], ['роли/проверяющий.md', 'Проверяющего'],
@@ -563,14 +569,21 @@
   }
   function download(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
   // Копировать тему или письмо — вставить в любую почту без подключения
-  function copy(text, btn) {
-    const done = () => { const t0 = btn.textContent; btn.textContent = '✓ скопировано'; setTimeout(() => { btn.textContent = t0; }, 1500); };
+  function copy(text, btn, msg) {
+    const done = () => { const t0 = btn.textContent; btn.textContent = msg || '✓ скопировано'; setTimeout(() => { btn.textContent = t0; }, msg ? 8000 : 1500); };
     const old = () => { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); done(); } catch (_) {} ta.remove(); };
     try { navigator.clipboard.writeText(text).then(done, old); } catch (_) { old(); }
   }
   document.addEventListener('click', (e) => {
-    const t = e.target.closest && e.target.closest('[data-letter],[data-view],[data-copy],[data-open],#mo-csv');
+    const t = e.target.closest && e.target.closest('[data-letter],[data-view],[data-copy],[data-open],[data-mail],#mo-csv');
     if (!t) return;
+    // почта открылась — окно теряет фокус; не потеряло за 1,5 с (встроенный браузер не знает mailto) — копируем письмо
+    if (t.dataset.mail) {
+      let left = false; const away = () => { left = true; };
+      window.addEventListener('blur', away);
+      setTimeout(() => { window.removeEventListener('blur', away); if (!left && !document.hidden) copy(plain(((D && D[t.dataset.mail]) || {})['письмо']), t, 'Почта не открылась — письмо скопировано: вставьте его в новое письмо, тема — «копировать» слева'); }, 1500);
+      return;
+    }
     if (t.dataset.open) { opened[t.dataset.open] = true; return showView('base'); }   // «читать» во «Ваш ход» — письмо в «Базе»
     if (t.id === 'mo-csv') return xlsx();
     if (t.dataset.copy) { const [kind, slug] = t.dataset.copy.split(':'), d = (D && D[slug]) || {}; return copy(kind === 'тема' ? String(d['тема'] || '') : plain(d['письмо']), t); }
