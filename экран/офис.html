@@ -885,17 +885,20 @@
   // Копировать тему или письмо — вставить в любую почту без подключения
   function copy(text, btn, msg) {
     const done = () => { const t0 = btn.textContent; btn.textContent = msg || '✓ скопировано'; setTimeout(() => { btn.textContent = t0; }, msg ? 8000 : 1500); };
-    const old = () => { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); done(); } catch (_) {} ta.remove(); };
+    const fail = () => { btn.textContent = 'Не скопировалось — выделите текст письма и скопируйте сами'; };
+    const old = () => { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (_) {} ta.remove(); ok ? done() : fail(); };
     try { navigator.clipboard.writeText(text).then(done, old); } catch (_) { old(); }
   }
   document.addEventListener('click', (e) => {
     const t = e.target.closest && e.target.closest('[data-letter],[data-view],[data-copy],[data-open],[data-mail],#mo-csv');
     if (!t) return;
-    // почта открылась — окно теряет фокус; не потеряло за 1,5 с (встроенный браузер не знает mailto) — копируем письмо
+    // встроенный браузер Claude Code не открывает почту (mailto): окно не потеряло фокус за 1,5 с —
+    // кнопка предлагает скопировать письмо; копируем только по нажатию, буфер сами не трогаем
     if (t.dataset.mail) {
+      if (t.dataset.fallback) { e.preventDefault(); return copy(plain(((D && D[t.dataset.mail]) || {})['письмо']), t, '✓ письмо скопировано — вставьте в новое письмо, тему скопируйте слева'); }
       let left = false; const away = () => { left = true; };
       window.addEventListener('blur', away);
-      setTimeout(() => { window.removeEventListener('blur', away); if (!left && !document.hidden) copy(plain(((D && D[t.dataset.mail]) || {})['письмо']), t, 'Почта не открылась — письмо скопировано: вставьте его в новое письмо, тема — «копировать» слева'); }, 1500);
+      setTimeout(() => { window.removeEventListener('blur', away); if (!left && !document.hidden) { t.dataset.fallback = '1'; t.textContent = 'Почта не открылась? Нажмите — скопирую письмо'; } }, 1500);
       return;
     }
     if (t.dataset.open) { opened[t.dataset.open] = true; return showView('base'); }   // «читать» во «Ваш ход» — письмо в «Базе»
